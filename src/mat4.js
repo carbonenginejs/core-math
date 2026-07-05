@@ -1,0 +1,600 @@
+import { mat4 as glMat4, vec3 as glVec3 } from "gl-matrix";
+import { pool } from "./pool.js";
+
+const
+    mat4 = { ...glMat4 },
+    vec3 = { ...glVec3 };
+
+export { mat4 };
+
+/**
+ *
+ * @param {mat4} m
+ * @param {quat} rotation
+ * @param {vec3} translation
+ * @param {vec3} scaling
+ * @returns {mat4} m
+ */
+mat4.decompose = function (m, rotation, translation, scaling)
+{
+    mat4.getRotation(rotation, m);
+    mat4.getTranslation(translation, m);
+    mat4.getScaling(scaling, m);
+    return m;
+};
+
+/**
+ * Allocates a pooled mat4
+ * @returns {Float32Array|mat4}
+ */
+mat4.alloc = function ()
+{
+    return pool.allocF32(16);
+};
+
+/**
+ * Unallocates a pooled mat4
+ * @param {mat4|Float32Array} a
+ */
+mat4.unalloc = function (a)
+{
+    pool.freeType(a);
+};
+
+/**
+ * Sets a mat4 from a bone joint mat
+ * @param {mat4} out
+ * @param {Float32Array} jointMat
+ * @param {Number} index
+ * @return {mat4}
+ */
+mat4.fromJointMatIndex = function (out, jointMat, index)
+{
+    if (index >= 0)
+    {
+        const offset = index * 12;
+        out[0] = jointMat[offset];
+        out[1] = jointMat[offset + 4];
+        out[2] = jointMat[offset + 8];
+        out[3] = 0;
+        out[4] = jointMat[offset + 1];
+        out[5] = jointMat[offset + 5];
+        out[6] = jointMat[offset + 9];
+        out[7] = 0;
+        out[8] = jointMat[offset + 2];
+        out[9] = jointMat[offset + 6];
+        out[10] = jointMat[offset + 10];
+        out[11] = 0;
+        out[12] = jointMat[offset + 3];
+        out[13] = jointMat[offset + 7];
+        out[14] = jointMat[offset + 11];
+        out[15] = 1;
+        return out;
+    }
+
+    return mat4.identity(out);
+};
+
+/**
+ * arcFromForward
+ * @param {mat4} out
+ * @param {vec3} v
+ * @return {mat4} out
+ */
+mat4.arcFromForward = function (out, v)
+{
+    const norm = vec3.normalize(pool.allocF32(3), v);
+
+    mat4.identity(out);
+
+    if (norm[2] < -0.99999)
+    {
+        pool.freeType(norm);
+        return out;
+    }
+
+    if (norm[2] > 0.99999)
+    {
+        out[5] = -1.0;
+        out[10] = -1.0;
+        pool.freeType(norm);
+        return out;
+    }
+
+    const h = (1 + norm[2]) / (norm[0] * norm[0] + norm[1] * norm[1]);
+
+    out[0] = h * norm[1] * norm[1] - norm[2];
+    out[1] = -h * norm[0] * norm[1];
+    out[2] = norm[0];
+
+    out[4] = out[1];
+    out[5] = h * norm[0] * norm[0] - norm[2];
+    out[6] = norm[1];
+
+    out[8] = -norm[0];
+    out[9] = -norm[1];
+    out[10] = -norm[2];
+
+    pool.freeType(norm);
+    return out;
+};
+
+/**
+ * Copies the translation component from one mat4 to another
+ * @param {mat4} out
+ * @param {mat4} a
+ * @returns {mat4} out
+ */
+mat4.copyTranslation = function (out, a)
+{
+    out[12] = a[12];
+    out[13] = a[13];
+    out[14] = a[14];
+    return out;
+};
+
+/**
+ * Sets a mat4 from a mat4
+ * @param {mat4} out
+ * @param {mat3} m
+ * @returns {mat4} out
+ */
+mat4.fromMat3 = function (out, m)
+{
+    out[0] = m[0];
+    out[1] = m[1];
+    out[2] = m[2];
+    out[4] = m[3];
+    out[5] = m[4];
+    out[6] = m[5];
+    out[8] = m[6];
+    out[9] = m[7];
+    out[10] = m[8];
+    out[3] = out[7] = out[11] = out[12] = out[13] = out[14] = 0;
+    out[15] = 1;
+    return out;
+};
+
+// D3D ortho, depth maps to [0..1]
+mat4.orthoD3D = function(out, l, r, b, t, n, f)
+{
+    const
+        lr = 1 / (r - l),
+        bt = 1 / (t - b),
+        nf = 1 / (f - n);
+
+    out[0] = 2 * lr;
+    out[4] = 0;
+    out[8] = 0;
+    out[12] = -(r + l) * lr;
+    out[1] = 0;
+    out[5] = 2 * bt;
+    out[9] = 0;
+    out[13] = -(t + b) * bt;
+    out[2] = 0;
+    out[6] = 0;
+    out[10] = nf;
+    out[14] = -n * nf;
+    out[3] = 0;
+    out[7] = 0;
+    out[11] = 0;
+    out[15] = 1;
+    return out;
+};
+
+/**
+ * Left-handed look-at (D3D-style): +Z forward
+ * Column-major (gl-matrix style)
+ */
+mat4.lookAtD3D = function (out, eye, center, up)
+{
+    const x = pool.allocF32(3);
+    const y = pool.allocF32(3);
+    const z = pool.allocF32(3);
+
+    // z = forward = normalize(center - eye)   (LH)
+    vec3.subtract(z, center, eye);
+
+    if (vec3.squaredLength(z) === 0)
+    {
+        z[2] = 1;
+    }
+
+    vec3.normalize(z, z);
+
+    // x = normalize(cross(up, z))
+    vec3.cross(x, up, z);
+
+    if (vec3.squaredLength(x) === 0)
+    {
+        // nudge z slightly if up is parallel
+        if (Math.abs(up[2]) === 1) z[0] += 0.0001;
+        else z[2] += 0.0001;
+
+        vec3.normalize(z, z);
+        vec3.cross(x, up, z);
+    }
+
+    vec3.normalize(x, x);
+
+    // y = cross(z, x)
+    vec3.cross(y, z, x);
+
+    // Rotation (axes in columns)
+    out[0] = x[0]; out[1] = x[1]; out[2]  = x[2];  out[3]  = 0;
+    out[4] = y[0]; out[5] = y[1]; out[6]  = y[2];  out[7]  = 0;
+    out[8] = z[0]; out[9] = z[1]; out[10] = z[2];  out[11] = 0;
+
+    // Translation
+    out[12] = -vec3.dot(x, eye);
+    out[13] = -vec3.dot(y, eye);
+    out[14] = -vec3.dot(z, eye);
+    out[15] = 1;
+
+    pool.freeType(x);
+    pool.freeType(y);
+    pool.freeType(z);
+
+    return out;
+
+    // After calling lookAtD3D(out, eye, center, up):
+    // Transform center by out and it should land on +Z axis (x≈0, y≈0, z>0).
+    // Transform eye by out and it should land at the origin (0,0,0).
+};
+
+/**
+ * Builds a rotation-only look-at basis
+ * OpenGL / RH convention
+ * −Z is forward
+ * Does NOT touch translation
+ * Copies translation (and row 3) from an existing matrix
+ * Safe for column-major, gl-matrix layout
+ *
+ * @param {mat4} out - result
+ * @param {mat4} m - source matrix
+ * @param {vec3} eye - Position of the viewer
+ * @param {vec3} center - Point the viewer is looking at
+ * @param {vec3} up - vec3 pointing up
+ * @returns {mat4} out
+ */
+mat4.setLookRotation = function (out, m, eye, center, up)
+{
+    const
+        x = pool.allocF32(3),
+        y = pool.allocF32(3),
+        z = pool.allocF32(3),
+        u = pool.allocF32(3); // safeUp
+
+    // z axis = eye - center  (camera backward); -z is forward
+    vec3.subtract(z, eye, center);
+
+    if (vec3.squaredLength(z) === 0)
+    {
+        // arbitrary (back)
+        z[2] = 1;
+    }
+    vec3.normalize(z, z);
+
+    // Pick a stable up if the provided up is too aligned with z
+    vec3.copy(u, up);
+
+    // if |dot(up, z)| is ~1 then up × z is unstable
+    const dz = Math.abs(u[0] * z[0] + u[1] * z[1] + u[2] * z[2]);
+    if (dz > 0.9995)
+    {
+        // choose an alternate up axis that is not parallel to z
+        // try Z axis first, then X axis if needed
+        u[0] = 0; u[1] = 0; u[2] = 1;
+        const dz2 = Math.abs(u[0] * z[0] + u[1] * z[1] + u[2] * z[2]);
+        if (dz2 > 0.9995)
+        {
+            u[0] = 1; u[1] = 0; u[2] = 0;
+        }
+    }
+
+    // x = up × z
+    vec3.cross(x, u, z);
+
+    // Still degenerate? (can happen if 'up' was zero-length etc.)
+    if (vec3.squaredLength(x) === 0)
+    {
+        // fall back to a guaranteed-not-parallel up using z's dominant axis
+        if (Math.abs(z[1]) < 0.999)
+        {
+            u[0] = 0; u[1] = 1; u[2] = 0;
+        }
+        else
+        {
+            u[0] = 1; u[1] = 0; u[2] = 0;
+        }
+        vec3.cross(x, u, z);
+    }
+
+    vec3.normalize(x, x);
+
+    // y = z × x
+    vec3.cross(y, z, x);
+
+    // write rotation (columns)
+    out[0]  = x[0]; out[1]  = x[1]; out[2]  = x[2];
+    out[4]  = y[0]; out[5]  = y[1]; out[6]  = y[2];
+    out[8]  = z[0]; out[9]  = z[1]; out[10] = z[2];
+
+    // copy the rest
+    if (out !== m)
+    {
+        out[3]  = m[3];
+        out[7]  = m[7];
+        out[11] = m[11];
+        out[12] = m[12];
+        out[13] = m[13];
+        out[14] = m[14];
+        out[15] = m[15];
+    }
+
+    pool.freeType(x);
+    pool.freeType(y);
+    pool.freeType(z);
+    pool.freeType(u);
+
+    return out;
+};
+
+/**
+ * Gets a mat4's maximum column axis scale
+ *
+ * @param {mat4} a   - source mat4
+ * @returns {number} - maximum axis scale
+ */
+mat4.maxScaleOnAxis = function (a)
+{
+    let m11 = a[0],
+        m12 = a[4],
+        m13 = a[8],
+        m21 = a[1],
+        m22 = a[5],
+        m23 = a[9],
+        m31 = a[2],
+        m32 = a[6],
+        m33 = a[10];
+
+    let x = m11 * m11 + m12 * m12 + m13 * m13,
+        y = m21 * m21 + m22 * m22 + m23 * m23,
+        z = m31 * m31 + m32 * m32 + m33 * m33;
+
+    return Math.sqrt(Math.max(x, y, z));
+};
+
+/**
+ * Sets a left handed co-ordinate system perspective from a right handed co-ordinate system
+ * @param {mat4} out        - receiving mat4
+ * @param {number} fovY     - Vertical field of view in radians
+ * @param {number} aspect   - Aspect ratio. typically viewport width/height
+ * @param {number} near     - Near bound of the frustum
+ * @param {number} far      - Far bound of the frustum
+ * @returns {mat4} out      - receiving mat4
+ */
+mat4.perspectiveGL = function (out, fovY, aspect, near, far)
+{
+    let fH = Math.tan(fovY / 360 * Math.PI) * near;
+    let fW = fH * aspect;
+    mat4.frustum(out, -fW, fW, -fH, fH, near, far);
+    return out;
+};
+
+/**
+ * Projects a vector from 3d to 2d space, returning normalized screen space value
+ * m should be a projection matrix (or a VP or MVP)
+ * @author https://github.com/hughsk/from-3d-to-2d/blob/master/index.js
+ * @param {vec3} out   - receiving vec3
+ * @param {mat4} m     - Projection / View Projection
+ * @param {vec3} a     - the point to project
+ * @returns {vec3} out - receiving vec3
+ */
+mat4.projectVec3 = function (out, m, a)
+{
+    let
+        ix = a[0],
+        iy = a[1],
+        iz = a[2];
+
+    let ox = m[0] * ix + m[4] * iy + m[8] * iz + m[12],
+        oy = m[1] * ix + m[5] * iy + m[9] * iz + m[13],
+        oz = m[2] * ix + m[6] * iy + m[10] * iz + m[14],
+        ow = m[3] * ix + m[7] * iy + m[11] * iz + m[15];
+
+    out[0] = (ox / ow + 1) / 2;
+    out[1] = (oy / ow + 1) / 2;
+    out[2] = (oz / ow + 1) / 2;
+    return out;
+};
+
+
+/**
+ * Sets the translation component of a mat4 from a vec3
+ * @param {mat4} out
+ * @param {vec3} v
+ * @returns {mat4} out
+ */
+mat4.setTranslation = function (out, v)
+{
+    out[12] = v[0];
+    out[13] = v[1];
+    out[14] = v[2];
+    return out;
+};
+
+/**
+ * Sets the translation component of a mat4 from values
+ * @param {mat4} out
+ * @param {number} x
+ * @param {number} y
+ * @param {number} z
+ * @returns {mat4} out
+ */
+mat4.setTranslationFromValues = function (out, x, y, z)
+{
+    out[12] = x;
+    out[13] = y;
+    out[14] = z;
+    return out;
+};
+
+/**
+ * @author three.js authors
+ * @param out
+ * @param left
+ * @param right
+ * @param top
+ * @param bottom
+ * @param near
+ * @param far
+ * @returns {*}
+ */
+mat4.makePerspective = function (out, left, right, top, bottom, near, far)
+{
+    let x = 2 * near / (right - left),
+        y = 2 * near / (top - bottom);
+
+    let a = (right + left) / (right - left),
+        b = (top + bottom) / (top - bottom),
+        c = -(far + near) / (far - near),
+        d = -2 * far * near / (far - near);
+
+    out[0] = x;
+    out[4] = 0;
+    out[8] = a;
+    out[12] = 0;
+
+    out[1] = 0;
+    out[5] = y;
+    out[9] = b;
+    out[13] = 0;
+
+    out[2] = 0;
+    out[6] = 0;
+    out[10] = c;
+    out[14] = d;
+
+    out[3] = 0;
+    out[7] = 0;
+    out[11] = -1;
+    out[15] = 0;
+
+    return out;
+};
+
+/**
+ * @author three.js authors
+ * @param out
+ * @param left
+ * @param right
+ * @param top
+ * @param bottom
+ * @param near
+ * @param far
+ * @returns {mat4}
+ */
+mat4.makeOrthographic = function (out, left, right, top, bottom, near, far)
+{
+    let w = 1.0 / (right - left),
+        h = 1.0 / (top - bottom),
+        p = 1.0 / (far - near);
+
+    let x = (right + left) * w,
+        y = (top + bottom) * h,
+        z = (far + near) * p;
+
+    out[0] = 2 * w;
+    out[4] = 0;
+    out[8] = 0;
+    out[12] = -x;
+
+    out[1] = 0;
+    out[5] = 2 * h;
+    out[9] = 0;
+    out[13] = -y;
+
+    out[2] = 0;
+    out[6] = 0;
+    out[10] = -2 * p;
+    out[14] = -z;
+
+    out[3] = 0;
+    out[7] = 0;
+    out[11] = 0;
+    out[15] = 1;
+
+    return out;
+};
+
+export const {
+    add,
+    adjoint,
+    clone,
+    copy,
+    create,
+    decompose,
+    determinant,
+    equals,
+    exactEquals,
+    frob,
+    fromQuat,
+    fromQuat2,
+    fromRotation,
+    fromRotationTranslation,
+    fromRotationTranslationScale,
+    fromRotationTranslationScaleOrigin,
+    fromScaling,
+    fromTranslation,
+    fromValues,
+    fromXRotation,
+    fromYRotation,
+    fromZRotation,
+    frustum,
+    getRotation,
+    getScaling,
+    getTranslation,
+    identity,
+    invert,
+    lookAt,
+    mul,
+    multiply,
+    multiplyScalar,
+    multiplyScalarAndAdd,
+    ortho,
+    orthoNO,
+    orthoZO,
+    perspective,
+    perspectiveFromFieldOfView,
+    perspectiveNO,
+    perspectiveZO,
+    rotate,
+    rotateX,
+    rotateY,
+    rotateZ,
+    scale,
+    set,
+    str,
+    sub,
+    subtract,
+    targetTo,
+    translate,
+    transpose,
+    alloc,
+    unalloc,
+    fromJointMatIndex,
+    arcFromForward,
+    copyTranslation,
+    fromMat3,
+    orthoD3D,
+    lookAtD3D,
+    setLookRotation,
+    maxScaleOnAxis,
+    perspectiveGL,
+    projectVec3,
+    setTranslation,
+    setTranslationFromValues,
+    makePerspective,
+    makeOrthographic
+} = mat4;

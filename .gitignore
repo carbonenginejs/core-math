@@ -1,0 +1,9 @@
+node_modules/
+.agents/
+.claude/
+.codex/
+.skill/
+.skills/
+npm-debug.log*
+*.tgz
+
