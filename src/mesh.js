@@ -5,7 +5,6 @@
  * plain arrays or typed arrays and return plain arrays unless otherwise noted.
  */
 
-import { num } from "./num.js";
 import { vec3 } from "./vec3.js";
 
 /**
@@ -127,18 +126,20 @@ export function computeBoundsFromTriangles(triangles)
  *
  * @param {ArrayLike<number>} positions Flat xyz positions.
  * @param {ArrayLike<number>} indices Flat triangle indices.
- * @returns {number[]} Flat xyz normals.
+ * @returns {Float32Array} Flat xyz normals.
  */
 export function generateNormals(positions, indices)
 {
-    const normals = new Array(positions.length).fill(0);
+    const
+        vertexCount = positions.length / 3,
+        normals = new Float32Array(positions.length);
 
-    for (let i = 0; i < indices.length; i += 3)
+    for (let t = 0; t < indices.length; t += 3)
     {
         const
-            ia = indices[i] * 3,
-            ib = indices[i + 1] * 3,
-            ic = indices[i + 2] * 3,
+            ia = indices[t] * 3,
+            ib = indices[t + 1] * 3,
+            ic = indices[t + 2] * 3,
             ax = positions[ia],
             ay = positions[ia + 1],
             az = positions[ia + 2],
@@ -158,12 +159,15 @@ export function generateNormals(positions, indices)
         }
     }
 
-    for (let i = 0; i < normals.length; i += 3)
+    for (let i = 0; i < vertexCount; i++)
     {
-        const n = vec3.normalize([ 0, 0, 0 ], [ normals[i], normals[i + 1], normals[i + 2] ]);
-        normals[i] = n[0];
-        normals[i + 1] = n[1];
-        normals[i + 2] = n[2];
+        const
+            offset = i * 3,
+            length = Math.hypot(normals[offset], normals[offset + 1], normals[offset + 2]) || 1;
+
+        normals[offset] /= length;
+        normals[offset + 1] /= length;
+        normals[offset + 2] /= length;
     }
 
     return normals;
@@ -176,20 +180,21 @@ export function generateNormals(positions, indices)
  * @param {ArrayLike<number>} normals Flat xyz normals.
  * @param {ArrayLike<number>} uvs Flat uv coordinates.
  * @param {ArrayLike<number>} indices Flat triangle indices.
- * @returns {number[]} Flat xyz tangents.
+ * @returns {Float32Array} Flat xyz tangents.
  */
 export function generateTangents(positions, normals, uvs, indices)
 {
     const
         vertexCount = positions.length / 3,
-        tangents = new Array(vertexCount * 3).fill(0);
+        tan1 = new Float32Array(vertexCount * 3),
+        tan2 = new Float32Array(vertexCount * 3);
 
-    for (let i = 0; i < indices.length; i += 3)
+    for (let t = 0; t < indices.length; t += 3)
     {
         const
-            i0 = indices[i],
-            i1 = indices[i + 1],
-            i2 = indices[i + 2],
+            i0 = indices[t],
+            i1 = indices[t + 1],
+            i2 = indices[t + 2],
             p0 = i0 * 3,
             p1 = i1 * 3,
             p2 = i2 * 3,
@@ -206,43 +211,52 @@ export function generateTangents(positions, normals, uvs, indices)
             v1 = uvs[t1 + 1] - uvs[t0 + 1],
             s2 = uvs[t2] - uvs[t0],
             v2 = uvs[t2 + 1] - uvs[t0 + 1],
-            divisor = s1 * v2 - s2 * v1;
-
-        if (Math.abs(divisor) <= num.EPSILON) continue;
-
-        const
-            scale = 1 / divisor,
-            tx = (v2 * x1 - v1 * x2) * scale,
-            ty = (v2 * y1 - v1 * y2) * scale,
-            tz = (v2 * z1 - v1 * z2) * scale;
+            divisor = s1 * v2 - s2 * v1,
+            scale = divisor ? 1 / divisor : 0,
+            sx = (v2 * x1 - v1 * x2) * scale,
+            sy = (v2 * y1 - v1 * y2) * scale,
+            sz = (v2 * z1 - v1 * z2) * scale,
+            tx = (s1 * x2 - s2 * x1) * scale,
+            ty = (s1 * y2 - s2 * y1) * scale,
+            tz = (s1 * z2 - s2 * z1) * scale;
 
         for (const offset of [ p0, p1, p2 ])
         {
-            tangents[offset] += tx;
-            tangents[offset + 1] += ty;
-            tangents[offset + 2] += tz;
+            tan1[offset] += sx;
+            tan1[offset + 1] += sy;
+            tan1[offset + 2] += sz;
+            tan2[offset] += tx;
+            tan2[offset + 1] += ty;
+            tan2[offset + 2] += tz;
         }
     }
 
-    for (let i = 0; i < tangents.length; i += 3)
+    const tangents = new Float32Array(vertexCount * 3);
+    for (let i = 0; i < vertexCount; i++)
     {
         const
-            nx = normals[i],
-            ny = normals[i + 1],
-            nz = normals[i + 2],
-            tx = tangents[i],
-            ty = tangents[i + 1],
-            tz = tangents[i + 2],
-            normalDotTangent = nx * tx + ny * ty + nz * tz,
-            tangent = vec3.normalize([ 0, 0, 0 ], [
-                tx - nx * normalDotTangent,
-                ty - ny * normalDotTangent,
-                tz - nz * normalDotTangent
-            ]);
+            offset = i * 3,
+            nx = normals[offset],
+            ny = normals[offset + 1],
+            nz = normals[offset + 2],
+            tx = tan1[offset],
+            ty = tan1[offset + 1],
+            tz = tan1[offset + 2],
+            normalDotTangent = nx * tx + ny * ty + nz * tz;
 
-        tangents[i] = tangent[0];
-        tangents[i + 1] = tangent[1];
-        tangents[i + 2] = tangent[2];
+        let ox = tx - nx * normalDotTangent,
+            oy = ty - ny * normalDotTangent,
+            oz = tz - nz * normalDotTangent;
+
+        const length = Math.hypot(ox, oy, oz) || 1;
+
+        ox /= length;
+        oy /= length;
+        oz /= length;
+
+        tangents[offset] = ox;
+        tangents[offset + 1] = oy;
+        tangents[offset + 2] = oz;
     }
 
     return tangents;
