@@ -1,4 +1,4 @@
-import { mat3 as glMat3 } from "gl-matrix";
+import * as glMat3 from "gl-matrix/esm/mat3.js";
 import { pool } from "./pool.js";
 
 const mat3 = { ...glMat3 };

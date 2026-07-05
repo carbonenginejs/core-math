@@ -1,4 +1,4 @@
-import { vec2 as glVec2 } from "gl-matrix";
+import * as glVec2 from "gl-matrix/esm/vec2.js";
 import { pool } from "./pool.js";
 
 const vec2 = { ...glVec2 };

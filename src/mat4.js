@@ -1,9 +1,15 @@
-import { mat4 as glMat4, vec3 as glVec3 } from "gl-matrix";
+import * as glMat4 from "gl-matrix/esm/mat4.js";
+import {
+    copy as copyVec3,
+    cross as crossVec3,
+    dot as dotVec3,
+    normalize as normalizeVec3,
+    squaredLength as squaredLengthVec3,
+    subtract as subtractVec3
+} from "gl-matrix/esm/vec3.js";
 import { pool } from "./pool.js";
 
-const
-    mat4 = { ...glMat4 },
-    vec3 = { ...glVec3 };
+const mat4 = { ...glMat4 };
 
 export { mat4 };
 
@@ -83,7 +89,7 @@ mat4.fromJointMatIndex = function (out, jointMat, index)
  */
 mat4.arcFromForward = function (out, v)
 {
-    const norm = vec3.normalize(pool.allocF32(3), v);
+    const norm = normalizeVec3(pool.allocF32(3), v);
 
     mat4.identity(out);
 
@@ -193,32 +199,32 @@ mat4.lookAtD3D = function (out, eye, center, up)
     const z = pool.allocF32(3);
 
     // z = forward = normalize(center - eye)   (LH)
-    vec3.subtract(z, center, eye);
+    subtractVec3(z, center, eye);
 
-    if (vec3.squaredLength(z) === 0)
+    if (squaredLengthVec3(z) === 0)
     {
         z[2] = 1;
     }
 
-    vec3.normalize(z, z);
+    normalizeVec3(z, z);
 
     // x = normalize(cross(up, z))
-    vec3.cross(x, up, z);
+    crossVec3(x, up, z);
 
-    if (vec3.squaredLength(x) === 0)
+    if (squaredLengthVec3(x) === 0)
     {
         // nudge z slightly if up is parallel
         if (Math.abs(up[2]) === 1) z[0] += 0.0001;
         else z[2] += 0.0001;
 
-        vec3.normalize(z, z);
-        vec3.cross(x, up, z);
+        normalizeVec3(z, z);
+        crossVec3(x, up, z);
     }
 
-    vec3.normalize(x, x);
+    normalizeVec3(x, x);
 
     // y = cross(z, x)
-    vec3.cross(y, z, x);
+    crossVec3(y, z, x);
 
     // Rotation (axes in columns)
     out[0] = x[0]; out[1] = x[1]; out[2]  = x[2];  out[3]  = 0;
@@ -226,9 +232,9 @@ mat4.lookAtD3D = function (out, eye, center, up)
     out[8] = z[0]; out[9] = z[1]; out[10] = z[2];  out[11] = 0;
 
     // Translation
-    out[12] = -vec3.dot(x, eye);
-    out[13] = -vec3.dot(y, eye);
-    out[14] = -vec3.dot(z, eye);
+    out[12] = -dotVec3(x, eye);
+    out[13] = -dotVec3(y, eye);
+    out[14] = -dotVec3(z, eye);
     out[15] = 1;
 
     pool.freeType(x);
@@ -266,17 +272,17 @@ mat4.setLookRotation = function (out, m, eye, center, up)
         u = pool.allocF32(3); // safeUp
 
     // z axis = eye - center  (camera backward); -z is forward
-    vec3.subtract(z, eye, center);
+    subtractVec3(z, eye, center);
 
-    if (vec3.squaredLength(z) === 0)
+    if (squaredLengthVec3(z) === 0)
     {
         // arbitrary (back)
         z[2] = 1;
     }
-    vec3.normalize(z, z);
+    normalizeVec3(z, z);
 
     // Pick a stable up if the provided up is too aligned with z
-    vec3.copy(u, up);
+    copyVec3(u, up);
 
     // if |dot(up, z)| is ~1 then up × z is unstable
     const dz = Math.abs(u[0] * z[0] + u[1] * z[1] + u[2] * z[2]);
@@ -293,10 +299,10 @@ mat4.setLookRotation = function (out, m, eye, center, up)
     }
 
     // x = up × z
-    vec3.cross(x, u, z);
+    crossVec3(x, u, z);
 
     // Still degenerate? (can happen if 'up' was zero-length etc.)
-    if (vec3.squaredLength(x) === 0)
+    if (squaredLengthVec3(x) === 0)
     {
         // fall back to a guaranteed-not-parallel up using z's dominant axis
         if (Math.abs(z[1]) < 0.999)
@@ -307,13 +313,13 @@ mat4.setLookRotation = function (out, m, eye, center, up)
         {
             u[0] = 1; u[1] = 0; u[2] = 0;
         }
-        vec3.cross(x, u, z);
+        crossVec3(x, u, z);
     }
 
-    vec3.normalize(x, x);
+    normalizeVec3(x, x);
 
     // y = z × x
-    vec3.cross(y, z, x);
+    crossVec3(y, z, x);
 
     // write rotation (columns)
     out[0]  = x[0]; out[1]  = x[1]; out[2]  = x[2];

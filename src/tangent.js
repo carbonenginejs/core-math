@@ -11,8 +11,16 @@ import {
     generateNormals,
     generateTangents
 } from "./mesh.js";
-import { num } from "./num.js";
-import { vec3 } from "./vec3.js";
+import {
+    EPSILON,
+    clamp
+} from "./num.js";
+import {
+    cross,
+    dot,
+    length as vec3Length,
+    normalize
+} from "gl-matrix/esm/vec3.js";
 
 /** Full-turn float32 constant used by the CCP tangent-frame shader. */
 export const TANGENT_TAU = 6.28318548;
@@ -100,18 +108,18 @@ export function decodeTangentFrame(u)
 export function encodeTangentFrame(T, B, N)
 {
     let a0 = Math.atan2(T[1], T[0]),
-        a1 = Math.acos(num.clamp(T[2], -1, 1));
+        a1 = Math.acos(clamp(T[2], -1, 1));
 
     const
         a2 = Math.atan2(B[1], B[0]),
-        a3 = Math.acos(num.clamp(B[2], -1, 1));
+        a3 = Math.acos(clamp(B[2], -1, 1));
 
-    if (N && vec3.dot(N, vec3.cross([ 0, 0, 0 ], T, B)) < 0)
+    if (N && dot(N, cross([ 0, 0, 0 ], T, B)) < 0)
     {
         a1 = -a1;
     }
 
-    const enc = angle => num.clamp((angle + PI) / TAU, 0, 1);
+    const enc = angle => clamp((angle + PI) / TAU, 0, 1);
     return [ enc(a0), enc(a1), enc(a2), enc(a3) ];
 }
 
@@ -212,11 +220,11 @@ export function packTangentFrames(normals, tangents, binormals)
     for (let i = 0, o = 0; i < normals.length; i += 3, o += 4)
     {
         const
-            normal = vec3.normalize([ 0, 0, 0 ], [ normals[i], normals[i + 1], normals[i + 2] ]),
-            tangent = vec3.normalize([ 0, 0, 0 ], [ tangents[i], tangents[i + 1], tangents[i + 2] ]),
-            binormal = vec3.normalize([ 0, 0, 0 ], [ binormals[i], binormals[i + 1], binormals[i + 2] ]);
+            normal = normalize([ 0, 0, 0 ], [ normals[i], normals[i + 1], normals[i + 2] ]),
+            tangent = normalize([ 0, 0, 0 ], [ tangents[i], tangents[i + 1], tangents[i + 2] ]),
+            binormal = normalize([ 0, 0, 0 ], [ binormals[i], binormals[i + 1], binormals[i + 2] ]);
 
-        if (vec3.length(normal) <= num.EPSILON || vec3.length(tangent) <= num.EPSILON || vec3.length(binormal) <= num.EPSILON)
+        if (vec3Length(normal) <= EPSILON || vec3Length(tangent) <= EPSILON || vec3Length(binormal) <= EPSILON)
         {
             packed[o] = NULL_TANGENT_UNORM[0];
             packed[o + 1] = NULL_TANGENT_UNORM[1];

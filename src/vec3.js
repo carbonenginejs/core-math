@@ -1,11 +1,13 @@
-import { vec3 as glVec3, mat4 as glMat4 } from "gl-matrix";
+import * as glVec3 from "gl-matrix/esm/vec3.js";
+import {
+    fromQuat as mat4FromQuat,
+    getRotation as getMat4Rotation
+} from "gl-matrix/esm/mat4.js";
+import { transformMat4 as transformVec4Mat4 } from "gl-matrix/esm/vec4.js";
 import { num } from "./num.js";
 import { pool } from "./pool.js";
-import { vec4 } from "./vec4.js";
 
-const
-    vec3 = { ...glVec3 },
-    mat4 = { ...glMat4 };
+const vec3 = { ...glVec3 };
 
 /**
  * Vector 3
@@ -138,9 +140,9 @@ vec3.directionFromQuat = function (out, axis, q)
  */
 vec3.directionFromMat4 = function (out, axis, m)
 {
-    const quat_0 = mat4.getRotation(vec4.alloc(), m);
+    const quat_0 = getMat4Rotation(pool.allocF32(4), m);
     vec3.transformQuat(out, axis, quat_0);
-    vec4.unalloc(quat_0);
+    pool.freeType(quat_0);
     return out;
 };
 
@@ -181,7 +183,7 @@ vec3.euler.DEFAULT_ORDER = "XYZ";
 vec3.euler.fromQuat = function (out, q, order = vec3.euler.DEFAULT_ORDER)
 {
     // mat4.alloc
-    const mat4_0 = mat4.fromQuat(pool.allocF32(16), q);
+    const mat4_0 = mat4FromQuat(pool.allocF32(16), q);
     vec3.euler.fromMat4(out, mat4_0, order);
     pool.unalloc(mat4_0);
     return out;
@@ -689,7 +691,7 @@ vec3.subtractScalar = function (out, a, s)
  */
 vec3.unproject = function (out, a, invViewProj, viewport)
 {
-    const vec4_0 = vec4.alloc(4);
+    const vec4_0 = pool.allocF32(4);
 
     let x = a[0],
         y = a[1],
@@ -700,11 +702,11 @@ vec3.unproject = function (out, a, invViewProj, viewport)
     vec4_0[2] = 2.0 * z - 1.0;
     vec4_0[3] = 1.0;
 
-    vec4.transformMat4(vec4_0, vec4_0, invViewProj);
+    transformVec4Mat4(vec4_0, vec4_0, invViewProj);
 
     if (vec4_0[3] === 0.0)
     {
-        vec4.unalloc(vec4_0);
+        pool.freeType(vec4_0);
         out[0] = 0;
         out[1] = 0;
         out[2] = 0;
@@ -715,7 +717,7 @@ vec3.unproject = function (out, a, invViewProj, viewport)
     out[1] = vec4_0[1] / vec4_0[3];
     out[2] = vec4_0[2] / vec4_0[3];
 
-    vec4.unalloc(vec4_0);
+    pool.freeType(vec4_0);
 
     return out;
 };

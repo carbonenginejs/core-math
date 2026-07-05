@@ -1,4 +1,4 @@
-import { vec4 as glVec4 } from "gl-matrix";
+import * as glVec4 from "gl-matrix/esm/vec4.js";
 import { num } from "./num.js";
 import { pool } from "./pool.js";
 

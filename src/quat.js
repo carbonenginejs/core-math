@@ -1,6 +1,6 @@
-import { quat as glQuat } from "gl-matrix";
-import { vec3 } from "./vec3.js";
-import { num } from "./num.js";
+import * as glQuat from "gl-matrix/esm/quat.js";
+import { dot as vec3Dot } from "gl-matrix/esm/vec3.js";
+import { EPSILON } from "./num.js";
 import { pool } from "./pool.js";
 
 const quat = { ...glQuat };
@@ -35,8 +35,8 @@ quat.unalloc = function(a)
  */
 quat.fromUnitVectors = function(out, from, to)
 {
-    let r = vec3.dot(from, to) + 1;
-    if (r < num.EPSILON)
+    let r = vec3Dot(from, to) + 1;
+    if (r < EPSILON)
     {
         r = 0;
         if (Math.abs(from[0]) > Math.abs(from[2]))

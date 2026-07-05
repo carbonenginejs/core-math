@@ -5,7 +5,11 @@
  * plain arrays or typed arrays and return plain arrays unless otherwise noted.
  */
 
-import { vec3 } from "./vec3.js";
+import {
+    cross,
+    length as vec3Length,
+    normalize
+} from "gl-matrix/esm/vec3.js";
 
 /**
  * Calculate the unit face normal for a triangle.
@@ -18,12 +22,12 @@ import { vec3 } from "./vec3.js";
 export function triangleNormal(a, b, c)
 {
     const normal = [ 0, 0, 0 ];
-    vec3.cross(
+    cross(
         normal,
         [ b[0] - a[0], b[1] - a[1], b[2] - a[2] ],
         [ c[0] - a[0], c[1] - a[1], c[2] - a[2] ]
     );
-    return vec3.normalize(normal, normal);
+    return normalize(normal, normal);
 }
 
 /**
@@ -37,12 +41,12 @@ export function triangleNormal(a, b, c)
 export function triangleArea2(a, b, c)
 {
     const normal = [ 0, 0, 0 ];
-    vec3.cross(
+    cross(
         normal,
         [ b[0] - a[0], b[1] - a[1], b[2] - a[2] ],
         [ c[0] - a[0], c[1] - a[1], c[2] - a[2] ]
     );
-    return vec3.length(normal);
+    return vec3Length(normal);
 }
 
 /**
@@ -145,7 +149,7 @@ export function generateNormals(positions, indices)
             az = positions[ia + 2],
             faceNormal = [ 0, 0, 0 ];
 
-        vec3.cross(
+        cross(
             faceNormal,
             [ positions[ib] - ax, positions[ib + 1] - ay, positions[ib + 2] - az ],
             [ positions[ic] - ax, positions[ic + 1] - ay, positions[ic + 2] - az ]
@@ -284,7 +288,7 @@ export function generateBiNormals(normals, tangents, { uvHandedness = "right" } 
 
     for (let i = 0; i < normals.length; i += 3)
     {
-        const b = vec3.normalize(
+        const b = normalize(
             [ 0, 0, 0 ],
             [
                 normals[i + 1] * tangents[i + 2] - normals[i + 2] * tangents[i + 1],
