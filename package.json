@@ -1,6 +1,6 @@
 {
   "name": "@carbonenginejs/core-math",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Browser-friendly gl-matrix based math containers and CarbonEngineJS mesh/tangent helpers.",
   "type": "module",
   "main": "src/index.js",
