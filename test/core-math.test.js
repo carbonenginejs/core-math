@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { mesh, num, tangent, vec3 as rootVec3, vertex } from "@carbonenginejs/core-math";
+import { mesh, num, quat, tangent, vec3 as rootVec3, vertex } from "@carbonenginejs/core-math";
 import { mesh as subMesh } from "@carbonenginejs/core-math/mesh";
 import { tangent as subTangent } from "@carbonenginejs/core-math/tangent";
 import { cross, normalize, vec3 as vec3Container } from "@carbonenginejs/core-math/vec3";
@@ -81,6 +81,18 @@ test("vertex compatibility delegates to shared mesh math", () =>
         vertex.calculateTangents(INDICES, POSITIONS, UVS),
         mesh.generateTangents(POSITIONS, mesh.generateNormals(POSITIONS, INDICES), UVS, INDICES)
     );
+});
+
+test("quat creates Carbon yaw pitch roll rotations", () =>
+{
+    const out = quat.fromYawPitchRoll(quat.create(), 0.5, 0.6, 0.7);
+
+    almostEqualArray(out, [
+        0.350018859,
+        0.123841502,
+        0.248718783,
+        0.894588768
+    ]);
 });
 
 test("tangent packs and decodes a GR2-style tangent frame", () =>

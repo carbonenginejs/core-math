@@ -661,6 +661,26 @@ num.linearFromSRGB = function (a)
 };
 
 /**
+ * Converts from linear color space to Carbon gamma 2.2 color space
+ * @param {Number} a
+ * @returns {Number}
+ */
+num.linearToGamma = function (a)
+{
+    return Math.pow(a, 0.454545);
+};
+
+/**
+ * Converts from Carbon gamma 2.2 color space to linear color space
+ * @param {Number} a
+ * @returns {Number}
+ */
+num.gammaToLinear = function (a)
+{
+    return Math.pow(a, 2.2);
+};
+
+/**
  * Converts linear colour to srgb
  * @param {Number} a
  * @returns {Number}
@@ -731,5 +751,7 @@ export const {
     unwrapDegrees,
     unwrapRadians,
     linearFromSRGB,
+    linearToGamma,
+    gammaToLinear,
     srgbFromLinear
 } = num;

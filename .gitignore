@@ -1,9 +1,12 @@
 node_modules/
+.agent/
 .agents/
 .claude/
 .codex/
 .skill/
 .skills/
+review/
+_review/
+carbonenginejs.md
 npm-debug.log*
 *.tgz
-
