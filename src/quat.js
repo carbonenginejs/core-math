@@ -1,3 +1,4 @@
+// @ts-self-types="./quat.d.ts"
 import * as glQuat from "gl-matrix/esm/quat.js";
 import { dot as vec3Dot } from "gl-matrix/esm/vec3.js";
 import { EPSILON } from "./num.js";

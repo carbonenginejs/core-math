@@ -1,3 +1,4 @@
+// @ts-self-types="./num.d.ts"
 export const num = {};
 
 num.EPSILON = 0.000001;

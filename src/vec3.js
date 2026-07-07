@@ -1,3 +1,4 @@
+// @ts-self-types="./vec3.d.ts"
 import * as glVec3 from "gl-matrix/esm/vec3.js";
 import {
     fromQuat as mat4FromQuat,

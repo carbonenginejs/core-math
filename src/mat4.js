@@ -1,3 +1,4 @@
+// @ts-self-types="./mat4.d.ts"
 import * as glMat4 from "gl-matrix/esm/mat4.js";
 import {
     copy as copyVec3,

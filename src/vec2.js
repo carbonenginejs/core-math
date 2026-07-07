@@ -1,3 +1,4 @@
+// @ts-self-types="./vec2.d.ts"
 import * as glVec2 from "gl-matrix/esm/vec2.js";
 import { pool } from "./pool.js";
 
