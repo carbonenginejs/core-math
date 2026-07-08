@@ -976,6 +976,17 @@ vec3.fromSRGB = function (out, srgb)
 };
 
 /**
+ * Converts srgb to linear colour
+ * @param {vec3} out
+ * @param {vec3} srgb
+ * @returns {vec3} out
+ */
+vec3.linearFromSRGB = function (out, srgb)
+{
+    return vec3.fromSRGB(out, srgb);
+};
+
+/**
  * Converts linear colour to srgb
  * @param {vec3} out
  * @param {vec3} srgb
@@ -986,6 +997,45 @@ vec3.toSRGB = function (out, linear)
     out[0] = num.srgbFromLinear(linear[0]);
     out[1] = num.srgbFromLinear(linear[1]);
     out[2] = num.srgbFromLinear(linear[2]);
+    return out;
+};
+
+/**
+ * Converts linear colour to srgb
+ * @param {vec3} out
+ * @param {vec3} linear
+ * @returns {vec3} out
+ */
+vec3.srgbFromLinear = function (out, linear)
+{
+    return vec3.toSRGB(out, linear);
+};
+
+/**
+ * Converts from linear color space to Carbon gamma 2.2 color space
+ * @param {vec3} out
+ * @param {vec3} linear
+ * @returns {vec3} out
+ */
+vec3.linearToGamma = function (out, linear)
+{
+    out[0] = num.linearToGamma(linear[0]);
+    out[1] = num.linearToGamma(linear[1]);
+    out[2] = num.linearToGamma(linear[2]);
+    return out;
+};
+
+/**
+ * Converts from Carbon gamma 2.2 color space to linear color space
+ * @param {vec3} out
+ * @param {vec3} gamma
+ * @returns {vec3} out
+ */
+vec3.gammaToLinear = function (out, gamma)
+{
+    out[0] = num.gammaToLinear(gamma[0]);
+    out[1] = num.gammaToLinear(gamma[1]);
+    out[2] = num.gammaToLinear(gamma[2]);
     return out;
 };
 
@@ -1114,6 +1164,10 @@ export const {
     fromMat4Column,
     fromMat3Column,
     fromSRGB,
+    linearFromSRGB,
     toSRGB,
+    srgbFromLinear,
+    linearToGamma,
+    gammaToLinear,
     applyQuaternion
 } = vec3;

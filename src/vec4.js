@@ -32,6 +32,17 @@ vec4.unalloc = function(a)
 vec4.ZERO = vec4.fromValues(0, 0, 0, 0);
 
 /**
+ * Creates a linear color vec4 with opaque alpha
+ * @returns {vec4}
+ */
+vec4.createLinear = function()
+{
+    const out = vec4.create();
+    out[3] = 1;
+    return out;
+};
+
+/**
  * Adds a scalar to a vec4
  *
  * @param {vec4} out
@@ -297,6 +308,7 @@ export const {
     transformMat4,
     transformQuat,
     zero,
+    createLinear,
     alloc,
     unalloc,
     ZERO,

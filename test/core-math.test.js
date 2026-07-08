@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { mesh, num, quat, tangent, vec3 as rootVec3, vertex } from "@carbonenginejs/core-math";
+import { mesh, num, quat, tangent, vec3 as rootVec3, vec4 as rootVec4, vertex } from "@carbonenginejs/core-math";
+import { isArrayLike } from "@carbonenginejs/core-math/is";
 import { mesh as subMesh } from "@carbonenginejs/core-math/mesh";
 import { tangent as subTangent } from "@carbonenginejs/core-math/tangent";
+import { copyArrayLike, fillArrayLike } from "@carbonenginejs/core-math/utils";
 import { cross, normalize, vec3 as vec3Container } from "@carbonenginejs/core-math/vec3";
 import * as vec3 from "@carbonenginejs/core-math/vec3";
+import * as vec4 from "@carbonenginejs/core-math/vec4";
 
 const
     POSITIONS = [
@@ -37,9 +40,15 @@ test("root and subpath imports expose individual methods and containers", () =>
     assert.equal(vec3.normalize, normalize);
     assert.equal(vec3.vec3, vec3Container);
     assert.equal(vec3Container.cross, cross);
+    assert.equal(rootVec4.createLinear, vec4.createLinear);
     assert.equal(mesh.generateNormals, subMesh.generateNormals);
     assert.equal(tangent.packTangentFrames, subTangent.packTangentFrames);
     assert.equal(num.clamp(2, 0, 1), 1);
+    assert.equal(num.hermite(0, 1, 0, 1, 0.5), 0.625);
+    assert.equal(num.hermiteDerivative(0, 1, 0, 1, 0.5), 1.25);
+    assert.equal(isArrayLike(new Float32Array(3), 3), true);
+    assert.deepEqual(copyArrayLike([ 0, 0 ], [ 1, 2, 3 ]), [ 1, 2 ]);
+    assert.deepEqual(fillArrayLike([ 0, 0 ], 4), [ 4, 4 ]);
 
     const
         out = [ 0, 0, 0 ],
@@ -93,6 +102,46 @@ test("quat creates Carbon yaw pitch roll rotations", () =>
         0.248718783,
         0.894588768
     ]);
+});
+
+test("vec3 exposes reusable color-space transforms", () =>
+{
+    const
+        srgb = [ 0.25, 0.5, 0.75 ],
+        out = [ 9, 9, 9 ];
+
+    assert.equal(vec3.linearFromSRGB(out, srgb), out);
+    almostEqualArray(out, [
+        num.linearFromSRGB(0.25),
+        num.linearFromSRGB(0.5),
+        num.linearFromSRGB(0.75)
+    ]);
+
+    assert.equal(vec3.linearToGamma(out, srgb), out);
+    almostEqualArray(out, [
+        num.linearToGamma(0.25),
+        num.linearToGamma(0.5),
+        num.linearToGamma(0.75)
+    ]);
+
+    assert.equal(vec3.gammaToLinear(out, srgb), out);
+    almostEqualArray(out, [
+        num.gammaToLinear(0.25),
+        num.gammaToLinear(0.5),
+        num.gammaToLinear(0.75)
+    ]);
+
+    assert.equal(vec3.srgbFromLinear(out, srgb), out);
+    almostEqualArray(out, [
+        num.srgbFromLinear(0.25),
+        num.srgbFromLinear(0.5),
+        num.srgbFromLinear(0.75)
+    ]);
+});
+
+test("vec4 creates opaque linear colors", () =>
+{
+    almostEqualArray(vec4.createLinear(), [ 0, 0, 0, 1 ]);
 });
 
 test("tangent packs and decodes a GR2-style tangent frame", () =>

@@ -1,11 +1,12 @@
 {
   "name": "@carbonenginejs/core-math",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Browser-friendly gl-matrix based math containers and CarbonEngineJS mesh/tangent helpers.",
   "type": "module",
   "main": "src/index.js",
   "exports": {
     ".": "./src/index.js",
+    "./is": "./src/is.js",
     "./num": "./src/num.js",
     "./vec2": "./src/vec2.js",
     "./vec3": "./src/vec3.js",
@@ -20,6 +21,7 @@
     "./ray3": "./src/ray3.js",
     "./sph3": "./src/sph3.js",
     "./pool": "./src/pool.js",
+    "./utils": "./src/utils.js",
     "./noise": "./src/noise.js",
     "./curve": "./src/curve.js",
     "./vertex": "./src/vertex.js",

@@ -1,3 +1,5 @@
+export * as is from "./is.js";
+
 export * as num from "./num.js";
 export * as vec2 from "./vec2.js";
 export * as vec3 from "./vec3.js";

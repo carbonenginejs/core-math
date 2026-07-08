@@ -491,6 +491,45 @@ num.strictNegative = function (s)
     return -Math.max(num.EPSILON, Math.abs(s));
 };
 
+/**
+ * Performs a scalar Hermite interpolation with two tangent/control values.
+ *
+ * @param {number} a
+ * @param {number} b
+ * @param {number} c
+ * @param {number} d
+ * @param {number} t
+ * @returns {number}
+ */
+num.hermite = function (a, b, c, d, t)
+{
+    const t2 = t * t;
+    const factor1 = t2 * (2 * t - 3) + 1;
+    const factor2 = t2 * (t - 2) + t;
+    const factor3 = t2 * (t - 1);
+    const factor4 = t2 * (3 - 2 * t);
+    return a * factor1 + b * factor2 + c * factor3 + d * factor4;
+};
+
+/**
+ * Gets the derivative of a scalar Hermite interpolation at normalized time.
+ *
+ * @param {number} a
+ * @param {number} b
+ * @param {number} c
+ * @param {number} d
+ * @param {number} t
+ * @returns {number}
+ */
+num.hermiteDerivative = function (a, b, c, d, t)
+{
+    const t2 = t * t;
+    const factor1 = 6 * t2 - 6 * t;
+    const factor2 = 3 * t2 - 4 * t + 1;
+    const factor3 = 3 * t2 - 2 * t;
+    const factor4 = -factor1;
+    return a * factor1 + b * factor2 + c * factor3 + d * factor4;
+};
 
 /**
  *
@@ -742,6 +781,8 @@ export const {
     step,
     strictPositive,
     strictNegative,
+    hermite,
+    hermiteDerivative,
     smoothStep,
     smootherStep,
     toHalfFloat,

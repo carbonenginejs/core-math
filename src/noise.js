@@ -1,3 +1,4 @@
+// @ts-self-types="./noise.d.ts"
 import { vec3 } from "./vec3.js";
 import { vec4 } from "./vec4.js";
 

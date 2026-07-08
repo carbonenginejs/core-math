@@ -1,3 +1,5 @@
+// @ts-self-types="./utils.d.ts"
+
 /**
  * Convert a nullable, scalar, or array-like value into an array.
  *
@@ -13,3 +15,37 @@ export function toArray(value)
     return Array.isArray(value) ? value : [ value ];
 }
 
+/**
+ * Copies array-like values into a writable indexed target.
+ *
+ * @template T
+ * @param {T} target Writable indexed target.
+ * @param {ArrayLike<any>} value Source values.
+ * @returns {T} The target.
+ */
+export function copyArrayLike(target, value)
+{
+    const length = Math.min(target.length, value.length);
+    for (let i = 0; i < length; i++)
+    {
+        target[i] = value[i];
+    }
+    return target;
+}
+
+/**
+ * Fills a writable indexed target with a scalar value.
+ *
+ * @template T
+ * @param {T} target Writable indexed target.
+ * @param {number} value Fill value.
+ * @returns {T} The target.
+ */
+export function fillArrayLike(target, value)
+{
+    for (let i = 0; i < target.length; i++)
+    {
+        target[i] = value;
+    }
+    return target;
+}
