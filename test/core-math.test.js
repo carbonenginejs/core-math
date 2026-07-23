@@ -4,6 +4,7 @@ import test from "node:test";
 import { mesh, num, quat, tangent, vec3 as rootVec3, vec4 as rootVec4, vertex } from "@carbonenginejs/core-math";
 import { isArrayLike } from "@carbonenginejs/core-math/is";
 import { mesh as subMesh } from "@carbonenginejs/core-math/mesh";
+import { carbonPerlin1D, createPerlinNoise1D, perlin1, perlin1D } from "@carbonenginejs/core-math/noise";
 import { tangent as subTangent } from "@carbonenginejs/core-math/tangent";
 import { copyArrayLike, fillArrayLike } from "@carbonenginejs/core-math/utils";
 import { cross, normalize, vec3 as vec3Container } from "@carbonenginejs/core-math/vec3";
@@ -102,6 +103,23 @@ test("quat creates Carbon yaw pitch roll rotations", () =>
         0.248718783,
         0.894588768
     ]);
+});
+
+test("one-dimensional Perlin noise matches Carbon's seeded implementation", () =>
+{
+    const
+        first = createPerlinNoise1D(0),
+        second = createPerlinNoise1D(0),
+        other = createPerlinNoise1D(1),
+        expectedAtPointTwoOne = 0.0123161308593752;
+
+    assert.ok(Math.abs(first.sample(0.21) - expectedAtPointTwoOne) <= 1e-15);
+    assert.equal(second.sample(0.21), first.sample(0.21));
+    assert.notEqual(other.sample(0.21), first.sample(0.21));
+    assert.equal(carbonPerlin1D(0.21, 1.1, 2, 3), first.fractalSum(0.21, 3, 1 / 1.1, 2));
+    assert.equal(typeof perlin1(0.21), "number");
+    assert.equal(typeof perlin1D(0.21, 1.1, 2, 3), "number");
+    assert.equal(first.fractalSum(3, -1), 0);
 });
 
 test("vec3 exposes reusable color-space transforms", () =>

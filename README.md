@@ -84,7 +84,10 @@ ccpwgl `vertex.js` implementation.
   CarbonEngineJS additions.
 - `box3`, `tri3`, `lne3`, `pln`, `ray3`, `sph3`: spatial helper containers.
 - `pool`: typed-array buffer pool helper.
-- `noise`, `curve`: extracted ccpwgl math helpers.
+- `noise`: legacy randomized ccpwgl helpers plus Carbon's source-backed seeded
+  `TriPerlinNoise` behavior (`createPerlinNoise1D`) and fixed-seed free-function
+  equivalent (`carbonPerlin1D`). These APIs are intentionally distinct.
+- `curve`: extracted ccpwgl curve helpers.
 - `mesh`: shared mesh rebuild helpers used by format packages.
 - `tangent`: CarbonEngineJS/GR2 packed tangent-frame helpers.
 - `vertex`: compatibility names for mesh/tangent generation.
