@@ -492,43 +492,57 @@ num.strictNegative = function (s)
 };
 
 /**
- * Performs a scalar Hermite interpolation with two tangent/control values.
+ * Evaluates cubic Hermite interpolation using Carbon argument order.
  *
- * @param {number} a
- * @param {number} b
- * @param {number} c
- * @param {number} d
- * @param {number} t
+ * @param {number} startValue
+ * @param {number} startTangent
+ * @param {number} endValue
+ * @param {number} endTangent
+ * @param {number} amount
  * @returns {number}
  */
-num.hermite = function (a, b, c, d, t)
+// USE THIS: Carbon order is start value, start tangent, end value, end tangent.
+num.cubicHermite = function (startValue, startTangent, endValue, endTangent, amount)
 {
-    const t2 = t * t;
-    const factor1 = t2 * (2 * t - 3) + 1;
-    const factor2 = t2 * (t - 2) + t;
-    const factor3 = t2 * (t - 1);
-    const factor4 = t2 * (3 - 2 * t);
-    return a * factor1 + b * factor2 + c * factor3 + d * factor4;
+    const
+        amountSquared = amount * amount,
+        amountCubed = amountSquared * amount,
+        startFactor = 2 * amountCubed - 3 * amountSquared + 1,
+        startTangentFactor = amountCubed - 2 * amountSquared + amount,
+        endFactor = -2 * amountCubed + 3 * amountSquared,
+        endTangentFactor = amountCubed - amountSquared;
+
+    return startValue * startFactor
+        + startTangent * startTangentFactor
+        + endValue * endFactor
+        + endTangent * endTangentFactor;
 };
 
 /**
- * Gets the derivative of a scalar Hermite interpolation at normalized time.
+ * Evaluates the derivative of cubic Hermite interpolation using Carbon
+ * argument order.
  *
- * @param {number} a
- * @param {number} b
- * @param {number} c
- * @param {number} d
- * @param {number} t
+ * @param {number} startValue
+ * @param {number} startTangent
+ * @param {number} endValue
+ * @param {number} endTangent
+ * @param {number} amount
  * @returns {number}
  */
-num.hermiteDerivative = function (a, b, c, d, t)
+// USE THIS: Carbon order is start value, start tangent, end value, end tangent.
+num.cubicHermiteDerivative = function (startValue, startTangent, endValue, endTangent, amount)
 {
-    const t2 = t * t;
-    const factor1 = 6 * t2 - 6 * t;
-    const factor2 = 3 * t2 - 4 * t + 1;
-    const factor3 = 3 * t2 - 2 * t;
-    const factor4 = -factor1;
-    return a * factor1 + b * factor2 + c * factor3 + d * factor4;
+    const
+        amountSquared = amount * amount,
+        startFactor = 6 * amountSquared - 6 * amount,
+        startTangentFactor = 3 * amountSquared - 4 * amount + 1,
+        endFactor = -startFactor,
+        endTangentFactor = 3 * amountSquared - 2 * amount;
+
+    return startValue * startFactor
+        + startTangent * startTangentFactor
+        + endValue * endFactor
+        + endTangent * endTangentFactor;
 };
 
 /**
@@ -781,8 +795,8 @@ export const {
     step,
     strictPositive,
     strictNegative,
-    hermite,
-    hermiteDerivative,
+    cubicHermite,
+    cubicHermiteDerivative,
     smoothStep,
     smootherStep,
     toHalfFloat,

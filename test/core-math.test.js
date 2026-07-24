@@ -5,6 +5,7 @@ import { mesh, num, quat, tangent, vec3 as rootVec3, vec4 as rootVec4, vertex } 
 import { isArrayLike } from "@carbonenginejs/core-math/is";
 import { mesh as subMesh } from "@carbonenginejs/core-math/mesh";
 import { carbonPerlin1D, createPerlinNoise1D, perlin1, perlin1D } from "@carbonenginejs/core-math/noise";
+import { cubicHermite, cubicHermiteDerivative } from "@carbonenginejs/core-math/num";
 import { tangent as subTangent } from "@carbonenginejs/core-math/tangent";
 import { copyArrayLike, fillArrayLike } from "@carbonenginejs/core-math/utils";
 import { cross, normalize, vec3 as vec3Container } from "@carbonenginejs/core-math/vec3";
@@ -45,8 +46,14 @@ test("root and subpath imports expose individual methods and containers", () =>
     assert.equal(mesh.generateNormals, subMesh.generateNormals);
     assert.equal(tangent.packTangentFrames, subTangent.packTangentFrames);
     assert.equal(num.clamp(2, 0, 1), 1);
-    assert.equal(num.hermite(0, 1, 0, 1, 0.5), 0.625);
-    assert.equal(num.hermiteDerivative(0, 1, 0, 1, 0.5), 1.25);
+    assert.equal(num.cubicHermite, cubicHermite);
+    assert.equal(num.cubicHermiteDerivative, cubicHermiteDerivative);
+    assert.equal(cubicHermite(2, 3, 11, 5, 0), 2);
+    assert.equal(cubicHermite(2, 3, 11, 5, 1), 11);
+    assert.ok(Math.abs(cubicHermite(2, 3, 11, 5, 0.4) - 5.12) <= 1e-12);
+    assert.equal(cubicHermiteDerivative(2, 3, 11, 5, 0), 3);
+    assert.equal(cubicHermiteDerivative(2, 3, 11, 5, 1), 5);
+    assert.ok(Math.abs(cubicHermiteDerivative(2, 3, 11, 5, 0.4) - 11) <= 1e-12);
     assert.equal(isArrayLike(new Float32Array(3), 3), true);
     assert.deepEqual(copyArrayLike([ 0, 0 ], [ 1, 2, 3 ]), [ 1, 2 ]);
     assert.deepEqual(fillArrayLike([ 0, 0 ], 4), [ 4, 4 ]);
