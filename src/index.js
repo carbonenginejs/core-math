@@ -1,6 +1,33 @@
 export * as is from "./is.js";
+export * from "./is.js";
+
+export * as arrays from "./arrays.js";
+export * from "./arrays.js";
+export * as bytes from "./bytes.js";
+export * from "./bytes.js";
+export * as compression from "./compression.js";
+export * from "./compression.js";
+export * as json from "./json.js";
+export * from "./json.js";
+export * as lookup from "./lookup.js";
+export * from "./lookup.js";
+export * as path from "./path.js";
+export * from "./path.js";
+export * as text from "./text.js";
+export * from "./text.js";
+export * as validation from "./validation.js";
+export {
+    assertPlainObject,
+    assertNonEmptyString,
+    assertSupportedVersion
+} from "./validation.js";
+
+export * as constants from "./constants/index.js";
+export * from "./constants/index.js";
 
 export * as num from "./num.js";
+export * as math from "./math/index.js";
+export * from "./math/scalar.js";
 export * as vec2 from "./vec2.js";
 export * as vec3 from "./vec3.js";
 export * as vec4 from "./vec4.js";

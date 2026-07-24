@@ -204,7 +204,7 @@ noise.createPerlinNoise1D = function(seed = Math.floor(Math.random() * 0x1000000
 const s_fixedPerlinNoise1D = noise.createPerlinNoise1D(0);
 
 /**
- * Evaluates Carbon's process-wide, fixed-seed `PerlinNoise1D` function.
+ * Evaluates Carbon's global fixed-seed `PerlinNoise1D` function.
  *
  * @param {number} x
  * @param {number} inverseAmplitude
@@ -308,4 +308,3 @@ export const {
     perlin1,
     perlin1D
 } = noise;
-

@@ -1,16 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { mesh, num, quat, tangent, vec3 as rootVec3, vec4 as rootVec4, vertex } from "@carbonenginejs/core-math";
-import { isArrayLike } from "@carbonenginejs/core-math/is";
-import { mesh as subMesh } from "@carbonenginejs/core-math/mesh";
-import { carbonPerlin1D, createPerlinNoise1D, perlin1, perlin1D } from "@carbonenginejs/core-math/noise";
-import { cubicHermite, cubicHermiteDerivative } from "@carbonenginejs/core-math/num";
-import { tangent as subTangent } from "@carbonenginejs/core-math/tangent";
-import { copyArrayLike, fillArrayLike } from "@carbonenginejs/core-math/utils";
-import { cross, normalize, vec3 as vec3Container } from "@carbonenginejs/core-math/vec3";
-import * as vec3 from "@carbonenginejs/core-math/vec3";
-import * as vec4 from "@carbonenginejs/core-math/vec4";
+import { mesh, num, quat, tangent, vec3 as rootVec3, vec4 as rootVec4, vertex } from "@carbonenginejs/runtime-utils";
+import { isArrayLike } from "@carbonenginejs/runtime-utils/is";
+import { mesh as subMesh } from "@carbonenginejs/runtime-utils/mesh";
+import { carbonPerlin1D, createPerlinNoise1D, perlin1, perlin1D } from "@carbonenginejs/runtime-utils/noise";
+import { cubicHermite, cubicHermiteDerivative } from "@carbonenginejs/runtime-utils/num";
+import { tangent as subTangent } from "@carbonenginejs/runtime-utils/tangent";
+import { copyArrayLike, fillArrayLike } from "@carbonenginejs/runtime-utils/utils";
+import { cross, normalize, vec3 as vec3Container } from "@carbonenginejs/runtime-utils/vec3";
+import * as vec3 from "@carbonenginejs/runtime-utils/vec3";
+import * as vec4 from "@carbonenginejs/runtime-utils/vec4";
 
 const
     POSITIONS = [

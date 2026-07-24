@@ -1,10 +1,10 @@
-carbonenginejs/core-math
-========================
+carbonenginejs/runtime-utils
+============================
 
-A browser-friendly gl-matrix based math package for CarbonEngineJS projects.
-It contains standalone math containers originally extracted from ccpwgl's
-`src/global/math` library, plus shared mesh and tangent helpers that replace
-duplicated code in the CarbonEngineJS format packages.
+A browser-safe foundation package for CarbonEngineJS projects. It contains
+neutral utilities; shared constant vocabularies; Carbon type, schema, model,
+document, and lifecycle primitives; and standalone math containers originally
+extracted from ccpwgl's `src/global/math` library.
 
 CarbonEngine and Fenris Creations (CCP Games) are named here for provenance,
 interoperability, and target-ecosystem context. This package contains no
@@ -21,4 +21,3 @@ CarbonEngineJS-facing code is copyright cppctamber / CarbonEngineJS
 contributors.
 
 Repository license: MIT. See LICENSE and THIRD-PARTY-NOTICES.md.
-

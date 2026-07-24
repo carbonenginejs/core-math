@@ -2,23 +2,23 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
 
-import * as box3 from "@carbonenginejs/core-math/box3";
-import * as curve from "@carbonenginejs/core-math/curve";
-import * as geometry from "@carbonenginejs/core-math/geometry";
-import * as is from "@carbonenginejs/core-math/is";
-import * as lne3 from "@carbonenginejs/core-math/lne3";
-import * as mat4 from "@carbonenginejs/core-math/mat4";
-import * as mesh from "@carbonenginejs/core-math/mesh";
-import * as num from "@carbonenginejs/core-math/num";
-import * as pln from "@carbonenginejs/core-math/pln";
-import * as quat from "@carbonenginejs/core-math/quat";
-import * as ray3 from "@carbonenginejs/core-math/ray3";
-import * as sph3 from "@carbonenginejs/core-math/sph3";
-import * as tangent from "@carbonenginejs/core-math/tangent";
-import * as tri3 from "@carbonenginejs/core-math/tri3";
-import { copyArrayLike } from "@carbonenginejs/core-math/utils";
-import * as vec3 from "@carbonenginejs/core-math/vec3";
-import * as vec4 from "@carbonenginejs/core-math/vec4";
+import * as box3 from "@carbonenginejs/runtime-utils/box3";
+import * as curve from "@carbonenginejs/runtime-utils/curve";
+import * as geometry from "@carbonenginejs/runtime-utils/geometry";
+import * as is from "@carbonenginejs/runtime-utils/is";
+import * as lne3 from "@carbonenginejs/runtime-utils/lne3";
+import * as mat4 from "@carbonenginejs/runtime-utils/mat4";
+import * as mesh from "@carbonenginejs/runtime-utils/mesh";
+import * as num from "@carbonenginejs/runtime-utils/num";
+import * as pln from "@carbonenginejs/runtime-utils/pln";
+import * as quat from "@carbonenginejs/runtime-utils/quat";
+import * as ray3 from "@carbonenginejs/runtime-utils/ray3";
+import * as sph3 from "@carbonenginejs/runtime-utils/sph3";
+import * as tangent from "@carbonenginejs/runtime-utils/tangent";
+import * as tri3 from "@carbonenginejs/runtime-utils/tri3";
+import { copyArrayLike } from "@carbonenginejs/runtime-utils/utils";
+import * as vec3 from "@carbonenginejs/runtime-utils/vec3";
+import * as vec4 from "@carbonenginejs/runtime-utils/vec4";
 import { getShapeArea } from "../src/geometry/helpers/misc.js";
 import { toJSON } from "../src/geometry/json.js";
 
@@ -59,7 +59,7 @@ test("advertised primitive subpaths import independently", () =>
     {
         const result = spawnSync(
             process.execPath,
-            [ "--input-type=module", "-e", `await import("@carbonenginejs/core-math/${name}")` ],
+            [ "--input-type=module", "-e", `await import("@carbonenginejs/runtime-utils/${name}")` ],
             { cwd: process.cwd(), encoding: "utf8" }
         );
         assert.equal(result.status, 0, `${name}: ${result.stderr}`);

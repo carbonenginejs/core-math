@@ -516,3 +516,9 @@ export function isEqual(a, b)
 
     return true;
 }
+
+// Neutral runtime-utils spellings preserve the established core predicates.
+export const isNullish = isNoU;
+export const isPlainObject = isPlain;
+export const isPromiseLike = isPromise;
+export const isTypedArray = isTyped;

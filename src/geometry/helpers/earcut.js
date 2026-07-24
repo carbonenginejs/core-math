@@ -312,7 +312,7 @@ function eliminateHoles(data, holeIndices, outerNode, dim)
 
     queue.sort(compareX);
 
-    // process holes from left to right
+    // handle holes from left to right
     for (i = 0; i < queue.length; i++)
     {
         outerNode = eliminateHole(queue[i], outerNode);
