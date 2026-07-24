@@ -1,4 +1,3 @@
-// @ts-self-types="./vec4.d.ts"
 import * as glVec4 from "gl-matrix/esm/vec4.js";
 import { num } from "./num.js";
 import { pool } from "./pool.js";
@@ -223,6 +222,11 @@ vec4.fromHex = function(out, hex, defaultAlpha = 1)
     out[2] = 0;
     out[3] = defaultAlpha;
 
+    if (typeof hex !== "string" || !/^#(?:[\da-f]{3,4}|[\da-f]{6}|[\da-f]{8})$/i.test(hex))
+    {
+        throw new TypeError("Invalid hex");
+    }
+
     // RGB hex
     if (hex.length === 4 || hex.length === 5)
     {
@@ -239,11 +243,6 @@ vec4.fromHex = function(out, hex, defaultAlpha = 1)
         out[2] = ("0x" + hex[5] + hex[6]) / 255;
         if (hex.length === 9) out[3] = ("0x" + hex[7] + hex[8]) / 255;
     }
-    else
-    {
-        throw new TypeError("Invalid hex");
-    }
-
     return out;
 };
 
@@ -261,6 +260,24 @@ vec4.fromArray = function(out, array, offset=0)
     out[2] = array[offset + 2];
     out[3] = array[offset + 3];
     return out;
+};
+
+vec4.setArray = vec4.fromArray;
+
+/**
+ * Writes a vec4 to an array at an optional offset.
+ * @param {vec4} a
+ * @param {TypedArray|Array} array
+ * @param {Number} [offset=0]
+ * @returns {vec4} a
+ */
+vec4.toArray = function(a, array, offset=0)
+{
+    array[offset] = a[0];
+    array[offset + 1] = a[1];
+    array[offset + 2] = a[2];
+    array[offset + 3] = a[3];
+    return a;
 };
 
 
@@ -324,5 +341,7 @@ export const {
     toHexA,
     toHex,
     fromHex,
-    fromArray
+    fromArray,
+    setArray,
+    toArray
 } = vec4;

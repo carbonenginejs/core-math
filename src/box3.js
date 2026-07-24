@@ -1,7 +1,8 @@
 import { num } from "./num.js";
 import { vec3 } from "./vec3.js";
-import { sph3 } from "./sph3.js";
 import { pool } from "./pool.js";
+
+const FLOAT32_MAX = 3.4028234663852886e38;
 
 
 /**
@@ -59,6 +60,14 @@ box3.$max = function (a)
  */
 box3.addPoint = function (out, a, p)
 {
+    if (box3.isEmpty(a))
+    {
+        out[0] = out[3] = p[0];
+        out[1] = out[4] = p[1];
+        out[2] = out[5] = p[2];
+        return out;
+    }
+
     out[0] = Math.min(a[0], p[0]);
     out[1] = Math.min(a[1], p[1]);
     out[2] = Math.min(a[2], p[2]);
@@ -78,6 +87,11 @@ box3.addPoint = function (out, a, p)
  */
 box3.addPoints = function (out, a, points)
 {
+    if (box3.isEmpty(a))
+    {
+        return points.length ? box3.fromPoints(out, points) : box3.empty(out);
+    }
+
     let minX = a[0],
         minY = a[1],
         minZ = a[2],
@@ -283,12 +297,12 @@ box3.distanceToValues = function (a, px, py, pz)
  */
 box3.empty = function (a)
 {
-    a[0] = 0;
-    a[1] = 0;
-    a[2] = 0;
-    a[3] = 0;
-    a[4] = 0;
-    a[5] = 0;
+    a[0] = FLOAT32_MAX;
+    a[1] = FLOAT32_MAX;
+    a[2] = FLOAT32_MAX;
+    a[3] = -FLOAT32_MAX;
+    a[4] = -FLOAT32_MAX;
+    a[5] = -FLOAT32_MAX;
     return a;
 };
 
@@ -300,12 +314,12 @@ box3.empty = function (a)
  */
 box3.bounds.empty = function (min, max)
 {
-    min[0] = 0;
-    min[1] = 0;
-    min[2] = 0;
-    max[0] = 0;
-    max[1] = 0;
-    max[2] = 0;
+    min[0] = FLOAT32_MAX;
+    min[1] = FLOAT32_MAX;
+    min[2] = FLOAT32_MAX;
+    max[0] = -FLOAT32_MAX;
+    max[1] = -FLOAT32_MAX;
+    max[2] = -FLOAT32_MAX;
 };
 
 /**
@@ -332,12 +346,12 @@ box3.equals = function (a, b)
         b5 = b[5];
 
     return (
-        Math.abs(a0 - b0) <= num.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) &&
-        Math.abs(a1 - b1) <= num.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) &&
-        Math.abs(a2 - b2) <= num.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2)) &&
-        Math.abs(a3 - b3) <= num.EPSILON * Math.max(1.0, Math.abs(a3), Math.abs(b3)) &&
-        Math.abs(a4 - b4) <= num.EPSILON * Math.max(1.0, Math.abs(a4), Math.abs(b4)) &&
-        Math.abs(a5 - b5) <= num.EPSILON * Math.max(1.0, Math.abs(a5), Math.abs(b5))
+        (a0 === b0 || Math.abs(a0 - b0) <= num.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0))) &&
+        (a1 === b1 || Math.abs(a1 - b1) <= num.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1))) &&
+        (a2 === b2 || Math.abs(a2 - b2) <= num.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2))) &&
+        (a3 === b3 || Math.abs(a3 - b3) <= num.EPSILON * Math.max(1.0, Math.abs(a3), Math.abs(b3))) &&
+        (a4 === b4 || Math.abs(a4 - b4) <= num.EPSILON * Math.max(1.0, Math.abs(a4), Math.abs(b4))) &&
+        (a5 === b5 || Math.abs(a5 - b5) <= num.EPSILON * Math.max(1.0, Math.abs(a5), Math.abs(b5)))
     );
 };
 
@@ -366,12 +380,12 @@ box3.equalsBounds = function (a, min, max)
         b5 = max[2];
 
     return (
-        Math.abs(a0 - b0) <= num.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) &&
-        Math.abs(a1 - b1) <= num.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) &&
-        Math.abs(a2 - b2) <= num.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2)) &&
-        Math.abs(a3 - b3) <= num.EPSILON * Math.max(1.0, Math.abs(a3), Math.abs(b3)) &&
-        Math.abs(a4 - b4) <= num.EPSILON * Math.max(1.0, Math.abs(a4), Math.abs(b4)) &&
-        Math.abs(a5 - b5) <= num.EPSILON * Math.max(1.0, Math.abs(a5), Math.abs(b5))
+        (a0 === b0 || Math.abs(a0 - b0) <= num.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0))) &&
+        (a1 === b1 || Math.abs(a1 - b1) <= num.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1))) &&
+        (a2 === b2 || Math.abs(a2 - b2) <= num.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2))) &&
+        (a3 === b3 || Math.abs(a3 - b3) <= num.EPSILON * Math.max(1.0, Math.abs(a3), Math.abs(b3))) &&
+        (a4 === b4 || Math.abs(a4 - b4) <= num.EPSILON * Math.max(1.0, Math.abs(a4), Math.abs(b4))) &&
+        (a5 === b5 || Math.abs(a5 - b5) <= num.EPSILON * Math.max(1.0, Math.abs(a5), Math.abs(b5)))
     );
 };
 
@@ -583,6 +597,8 @@ box3.fromPositionRadius = function (out, position, radius)
  */
 box3.fromSph3 = function (out, sphere)
 {
+    if (sphere[3] < 0) return box3.empty(out);
+
     out[0] = sphere[0] - sphere[3];
     out[1] = sphere[1] - sphere[3];
     out[2] = sphere[2] - sphere[3];
@@ -661,6 +677,14 @@ box3.getCenter = function (out, a)
  */
 box3.getClampedPoint = function (out, a, p)
 {
+    if (box3.isEmpty(a))
+    {
+        out[0] = p[0];
+        out[1] = p[1];
+        out[2] = p[2];
+        return out;
+    }
+
     out[0] = Math.max(a[0], Math.min(a[3], p[0]));
     out[1] = Math.max(a[1], Math.min(a[4], p[1]));
     out[2] = Math.max(a[2], Math.min(a[5], p[2]));
@@ -706,6 +730,14 @@ box3.getMin = function (out, a)
  */
 box3.getSize = function (out, a)
 {
+    if (box3.isEmpty(a))
+    {
+        out[0] = 0;
+        out[1] = 0;
+        out[2] = 0;
+        return out;
+    }
+
     out[0] = a[3] - a[0];
     out[1] = a[4] - a[1];
     out[2] = a[5] - a[2];
@@ -721,10 +753,7 @@ box3.getSize = function (out, a)
  */
 box3.getPosition = function (out, a)
 {
-    out[0] = (a[0] + a[3]) * 0.5;
-    out[1] = (a[1] + a[4]) * 0.5;
-    out[2] = (a[2] + a[5]) * 0.5;
-    return out;
+    return box3.getCenter(out, a);
 };
 
 /**
@@ -734,6 +763,8 @@ box3.getPosition = function (out, a)
  */
 box3.radius = function (a)
 {
+    if (box3.isEmpty(a)) return 0;
+
     let sX = a[3] - a[0],
         sY = a[4] - a[1],
         sZ = a[5] - a[2];
@@ -757,7 +788,7 @@ box3.intersect = function (out, a, b)
     out[3] = Math.min(a[3], b[3]);
     out[4] = Math.min(a[4], b[4]);
     out[5] = Math.min(a[5], b[5]);
-    return out;
+    return box3.isEmpty(out) ? box3.empty(out) : out;
 };
 
 /**
@@ -777,7 +808,7 @@ box3.intersectBounds = function (out, a, min, max)
     out[3] = Math.min(a[3], max[0]);
     out[4] = Math.min(a[4], max[1]);
     out[5] = Math.min(a[5], max[2]);
-    return out;
+    return box3.isEmpty(out) ? box3.empty(out) : out;
 };
 
 /**
@@ -859,7 +890,7 @@ box3.intersectsNormalConstant = function (a, normal, constant)
         tMax += normal[2] * a[2];
     }
 
-    return (tMin <= constant && tMax >= constant);
+    return (tMin <= -constant && tMax >= -constant);
 };
 
 /**
@@ -911,6 +942,8 @@ box3.intersectsValues = function (a, px, py, pz)
  */
 box3.intersectsPositionRadius = function (a, position, radius)
 {
+    if (box3.isEmpty(a) || radius < 0) return false;
+
     let x = Math.max(a[0], Math.min(a[3], position[0])) - position[0],
         y = Math.max(a[1], Math.min(a[4], position[1])) - position[1],
         z = Math.max(a[2], Math.min(a[5], position[2])) - position[2];
@@ -927,6 +960,8 @@ box3.intersectsPositionRadius = function (a, position, radius)
  */
 box3.intersectsSph3 = function (a, sphere)
 {
+    if (box3.isEmpty(a) || sphere[3] < 0) return false;
+
     let x = Math.max(a[0], Math.min(a[3], sphere[0])) - sphere[0],
         y = Math.max(a[1], Math.min(a[4], sphere[1])) - sphere[1],
         z = Math.max(a[2], Math.min(a[5], sphere[2])) - sphere[2];
@@ -942,7 +977,6 @@ box3.intersectsSph3 = function (a, sphere)
  */
 box3.isEmpty = function (a)
 {
-    if (a[0] + a[1] + a[2] + a[3] + a[4] + a[5] === 0) return true;
     return (a[3] < a[0]) || (a[4] < a[1]) || (a[5] < a[2]);
 };
 
@@ -955,7 +989,6 @@ box3.isEmpty = function (a)
  */
 box3.bounds.isEmpty = function (min, max)
 {
-    if (min[0] + min[1] + min[2] + max[0] + max[1] + max[2] === 0) return true;
     return (max[0] < min[0]) || (max[1] < min[1]) || (max[2] < min[2]);
 };
 
@@ -1028,6 +1061,8 @@ box3.squaredDistanceToPoint = function (a, p)
  */
 box3.surfaceArea = function (a)
 {
+    if (box3.isEmpty(a)) return 0;
+
     let aa = a[3] - a[0],
         h = a[4] - a[1],
         d = a[5] - a[2];
@@ -1080,25 +1115,24 @@ box3.toBounds = function (a, outMin, outMax)
  */
 box3.toPoints = function (a, points = [])
 {
+    if (box3.isEmpty(a)) return points;
+
     const
         ax = a[0],
         ay = a[1],
         az = a[2],
         bx = a[3],
         by = a[4],
-        bz = a[5],
-        x = bx + Math.abs(ax),
-        y = by + Math.abs(ay),
-        z = bz + Math.abs(az);
+        bz = a[5];
 
-    points.push([ bx + 0, by + 0, bz + 0 ]);
-    points.push([ bx - x, by + 0, bz + 0 ]);
-    points.push([ bx + 0, by + 0, bz - z ]);
-    points.push([ bx - x, by + 0, bz - z ]);
-    points.push([ bx + 0, by - y, bz + 0 ]);
-    points.push([ bx - x, by - y, bz + 0 ]);
-    points.push([ bx + 0, by - y, bz - z ]);
-    points.push([ bx - x, by - y, bz - z ]);
+    points.push([ bx, by, bz ]);
+    points.push([ ax, by, bz ]);
+    points.push([ bx, by, az ]);
+    points.push([ ax, by, az ]);
+    points.push([ bx, ay, bz ]);
+    points.push([ ax, ay, bz ]);
+    points.push([ bx, ay, az ]);
+    points.push([ ax, ay, az ]);
 
     return points;
 };
@@ -1111,6 +1145,14 @@ box3.toPoints = function (a, points = [])
  */
 box3.toPositionRadius = function (a, outCenter)
 {
+    if (box3.isEmpty(a))
+    {
+        outCenter[0] = 0;
+        outCenter[1] = 0;
+        outCenter[2] = 0;
+        return 0;
+    }
+
     let sX = a[3] - a[0],
         sY = a[4] - a[1],
         sZ = a[5] - a[2];
@@ -1131,6 +1173,14 @@ box3.toPositionRadius = function (a, outCenter)
  */
 box3.bounds.toPositionRadius = function (minBounds, maxBounds, outCenter)
 {
+    if (box3.bounds.isEmpty(minBounds, maxBounds))
+    {
+        outCenter[0] = 0;
+        outCenter[1] = 0;
+        outCenter[2] = 0;
+        return 0;
+    }
+
     let sX = maxBounds[0] - minBounds[0],
         sY = maxBounds[1] - minBounds[1],
         sZ = maxBounds[2] - minBounds[2];
@@ -1209,6 +1259,9 @@ box3.transformMat4 = function (out, a, m)
  */
 box3.union = function (out, a, b)
 {
+    if (box3.isEmpty(a)) return box3.copy(out, b);
+    if (box3.isEmpty(b)) return box3.copy(out, a);
+
     out[0] = Math.min(a[0], b[0]);
     out[1] = Math.min(a[1], b[1]);
     out[2] = Math.min(a[2], b[2]);
@@ -1229,6 +1282,9 @@ box3.union = function (out, a, b)
  */
 box3.unionBounds = function (out, a, min, max)
 {
+    if (box3.isEmpty(a)) return box3.fromBounds(out, min, max);
+    if (min[0] > max[0] || min[1] > max[1] || min[2] > max[2]) return box3.copy(out, a);
+
     out[0] = Math.min(a[0], min[0]);
     out[1] = Math.min(a[1], min[1]);
     out[2] = Math.min(a[2], min[2]);

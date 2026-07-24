@@ -72,7 +72,7 @@ tri3.area = function(a)
         by = a[1] - a[4],
         bz = a[2] - a[5];
     // Cross product
-    let x = ax * bz - az * by,
+    let x = ay * bz - az * by,
         y = az * bx - ax * bz,
         z = ax * by - ay * bx;
     // Return half length

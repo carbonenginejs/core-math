@@ -15,7 +15,7 @@ export function getShapeArea(points)
     let a = 0.0;
     for (let p = n - 1, q = 0; q < n; p = q++)
     {
-        a += points[p][0] * points[q][1] - points[p][0] * points[p][1];
+        a += points[p][0] * points[q][1] - points[q][0] * points[p][1];
     }
     return a * 0.5;
 }

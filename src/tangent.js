@@ -9,6 +9,7 @@
 import {
     generateBiNormals,
     generateNormals,
+    generateTangentFrames,
     generateTangents
 } from "./mesh.js";
 import {
@@ -30,7 +31,8 @@ export const TANGENT_PI = 3.14159274;
 
 const
     TAU = TANGENT_TAU,
-    PI = TANGENT_PI;
+    PI = TANGENT_PI,
+    POLAR_EPSILON = 1e-6;
 
 /**
  * Packed UNorm sentinel used for vertices with no authored tangent frame.
@@ -110,13 +112,18 @@ export function encodeTangentFrame(T, B, N)
     let a0 = Math.atan2(T[1], T[0]),
         a1 = Math.acos(clamp(T[2], -1, 1));
 
-    const
-        a2 = Math.atan2(B[1], B[0]),
-        a3 = Math.acos(clamp(B[2], -1, 1));
+    const a2 = Math.atan2(B[1], B[0]);
+    let a3 = Math.acos(clamp(B[2], -1, 1));
 
-    if (N && dot(N, cross([ 0, 0, 0 ], T, B)) < 0)
+    const negativeHandedness = N && dot(N, cross([ 0, 0, 0 ], T, B)) < 0;
+    if (negativeHandedness)
     {
-        a1 = -a1;
+        a1 = a1 === 0 ? -POLAR_EPSILON : -a1;
+    }
+    else
+    {
+        if (a1 === 0) a1 = POLAR_EPSILON;
+        if (a3 === 0) a3 = POLAR_EPSILON;
     }
 
     const enc = angle => clamp((angle + PI) / TAU, 0, 1);
@@ -211,20 +218,36 @@ export function unpackMeshTangents(mesh)
  */
 export function packTangentFrames(normals, tangents, binormals)
 {
-    if (normals.length !== tangents.length || normals.length !== binormals.length)
+    if (normals.length !== tangents.length ||
+        normals.length !== binormals.length ||
+        normals.length % 3 !== 0)
     {
-        throw new Error("packTangentFrames requires normal, tangent, and binormal channels with matching lengths");
+        throw new Error("packTangentFrames requires matching complete xyz channels");
     }
 
     const packed = new Array((normals.length / 3) * 4);
     for (let i = 0, o = 0; i < normals.length; i += 3, o += 4)
     {
-        const
-            normal = normalize([ 0, 0, 0 ], [ normals[i], normals[i + 1], normals[i + 2] ]),
-            tangent = normalize([ 0, 0, 0 ], [ tangents[i], tangents[i + 1], tangents[i + 2] ]),
-            binormal = normalize([ 0, 0, 0 ], [ binormals[i], binormals[i + 1], binormals[i + 2] ]);
+        const components = [
+            normals[i], normals[i + 1], normals[i + 2],
+            tangents[i], tangents[i + 1], tangents[i + 2],
+            binormals[i], binormals[i + 1], binormals[i + 2]
+        ];
+        if (!components.every(Number.isFinite))
+        {
+            throw new Error(`packTangentFrames received non-finite data at vertex ${i / 3}`);
+        }
 
-        if (vec3Length(normal) <= EPSILON || vec3Length(tangent) <= EPSILON || vec3Length(binormal) <= EPSILON)
+        const
+            normal = normalize([ 0, 0, 0 ], components.slice(0, 3)),
+            tangent = normalize([ 0, 0, 0 ], components.slice(3, 6)),
+            binormal = normalize([ 0, 0, 0 ], components.slice(6, 9)),
+            frameNormalLength = vec3Length(cross([ 0, 0, 0 ], tangent, binormal));
+
+        if (vec3Length(normal) <= EPSILON ||
+            vec3Length(tangent) <= EPSILON ||
+            vec3Length(binormal) <= EPSILON ||
+            frameNormalLength <= EPSILON)
         {
             packed[o] = NULL_TANGENT_UNORM[0];
             packed[o + 1] = NULL_TANGENT_UNORM[1];
@@ -260,5 +283,6 @@ export const tangent = Object.freeze({
     isPacked,
     generateNormals,
     generateTangents,
+    generateTangentFrames,
     generateBiNormals
 });

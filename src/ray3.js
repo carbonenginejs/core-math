@@ -12,6 +12,14 @@ import { mat3 } from "./mat3.js";
 
 export const ray3 = {};
 
+function getAtParameter(out, a, t)
+{
+    out[0] = a[0] + a[3] * t;
+    out[1] = a[1] + a[4] * t;
+    out[2] = a[2] + a[5] * t;
+    return out;
+}
+
 /**
  * Allocates a pooled ray3
  * @returns {Float32Array|ray3}
@@ -78,7 +86,10 @@ ray3.copyDirection = box3.copyMax;
  *
  * @returns {ray3}
  */
-ray3.create = box3.create;
+ray3.create = function ()
+{
+    return new Float32Array(6);
+};
 
 /**
  * Gets the distance from a ray3 to a point
@@ -108,12 +119,11 @@ ray3.distanceNormalConstant = function (a, n, c)
     if (den === 0)
     {
         if (dist === 0) return 0;
-        throw new Error("Determinant error");
-        //return null;
+        return null;
     }
 
     let t = -dist / den;
-    return t >= 0 ? t : null;
+    return t >= 0 ? t * Math.hypot(a[3], a[4], a[5]) : null;
 };
 
 /**
@@ -126,18 +136,7 @@ ray3.distanceNormalConstant = function (a, n, c)
  */
 ray3.distancePln = function (a, p)
 {
-    let den = p[0] * a[3] + p[1] * a[4] + p[2] * a[5];
-    let dist = (a[0] * p[0] + a[1] * p[1] + a[2] * p[2]) + p[3];
-
-    if (den === 0)
-    {
-        if (dist === 0) return 0;
-        throw new Error("Determinant error");
-        //return null;
-    }
-
-    let t = -dist / den;
-    return t >= 0 ? t : null;
+    return ray3.distanceNormalConstant(a, p, p[3]);
 };
 
 /**
@@ -179,14 +178,23 @@ ray3.exactEquals = box3.exactEquals;
 ray3.exactEqualsOriginDestination = box3.exactEqualsBounds;
 
 /**
- * Sets a ray3 from origin and destination
+ * Sets a ray3 from origin and direction
  *
  * @param {ray3} out
  * @param {vec3} o
  * @param {vec3} d
  * @returns {ray3} out
  */
-ray3.from = box3.from;
+ray3.from = function (out, origin, direction)
+{
+    out[0] = origin[0];
+    out[1] = origin[1];
+    out[2] = origin[2];
+    out[3] = direction[0];
+    out[4] = direction[1];
+    out[5] = direction[2];
+    return direction[0] || direction[1] || direction[2] ? ray3.normalize(out, out) : out;
+};
 
 /**
  * Sets a ray3 from an array at an optional offset
@@ -196,7 +204,11 @@ ray3.from = box3.from;
  * @param {number} [index=0]
  * @returns {ray3}
  */
-ray3.fromArray = box3.fromArray;
+ray3.fromArray = function (out, array, offset = 0)
+{
+    box3.fromArray(out, array, offset);
+    return out[3] || out[4] || out[5] ? ray3.normalize(out, out) : out;
+};
 
 /**
  * Sets a ray 3 from start and end vectors
@@ -309,10 +321,9 @@ ray3.unproject = function (out, coords, invProjView, viewport)
  */
 ray3.get = function (out, a, t)
 {
-    out[0] = a[0] + (a[3] * t);
-    out[1] = a[1] + (a[4] * t);
-    out[2] = a[2] + (a[5] * t);
-    return out;
+    const length = Math.hypot(a[3], a[4], a[5]);
+    return length === 0 ? vec3.set(out, a[0], a[1], a[2]) :
+        getAtParameter(out, a, t / length);
 };
 
 /**
@@ -339,7 +350,9 @@ ray3.getClosestPointToPoint = function (out, a, p)
         y = p[1] - a[1],
         z = p[2] - a[2];
 
-    let dirDist = x * a[3] + y * a[4] + z * a[5];
+    const directionLengthSquared = a[3] * a[3] + a[4] * a[4] + a[5] * a[5];
+    let dirDist = directionLengthSquared === 0 ? 0 :
+        (x * a[3] + y * a[4] + z * a[5]) / directionLengthSquared;
 
     if (dirDist < 0)
     {
@@ -349,7 +362,7 @@ ray3.getClosestPointToPoint = function (out, a, p)
     }
     else
     {
-        ray3.get(out, a, dirDist);
+        getAtParameter(out, a, dirDist);
     }
 
     return out;
@@ -418,7 +431,7 @@ ray3.getIntersectBounds = function (out, a, min, max)
     if (tzMax < tMax || tMax !== tMax) tMax = tzMax;
     if (tMax < 0) return null;
 
-    return ray3.get(out, a, tMin >= 0 ? tMin : tMax);
+    return getAtParameter(out, a, tMin >= 0 ? tMin : tMax);
 };
 
 /**
@@ -546,7 +559,7 @@ ray3.getIntersectVertices = (function ()
         let QdN = -sign * vec3.dot(diff, n);
         if (QdN < 0) return null;
 
-        return ray3.get(out, a, QdN / DdN);
+        return getAtParameter(out, a, QdN / DdN);
     };
 })();
 
@@ -616,23 +629,31 @@ ray3.getIntersectPositionRadius = (function ()
  */
 ray3.getIntersectSph3 = function (out, a, s)
 {
-    let x = s[0] - a[0],
-        y = s[1] - a[1],
-        z = s[2] - a[2],
-        r2 = s[3] * s[3];
+    if (s[3] < 0) return null;
 
-    let tca = x * a[3] + y * a[4] + z * a[5];
-    let d2 = (x * x + y * y + z * z) - tca * tca;
+    const
+        x = a[0] - s[0],
+        y = a[1] - s[1],
+        z = a[2] - s[2],
+        directionLengthSquared = a[3] * a[3] + a[4] * a[4] + a[5] * a[5];
 
-    if (d2 > r2) return null;
+    if (directionLengthSquared === 0) return null;
 
-    let thc = Math.sqrt(r2 - d2);
-    let t0 = tca - thc;
-    let t1 = tca + thc;
+    const
+        directionDotOffset = a[3] * x + a[4] * y + a[5] * z,
+        constant = x * x + y * y + z * z - s[3] * s[3],
+        discriminant = directionDotOffset * directionDotOffset - directionLengthSquared * constant;
+
+    if (discriminant < 0) return null;
+
+    const
+        root = Math.sqrt(discriminant),
+        t0 = (-directionDotOffset - root) / directionLengthSquared,
+        t1 = (-directionDotOffset + root) / directionLengthSquared;
 
     if (t0 < 0 && t1 < 0) return null;
-    if (t0 < 0) return ray3.get(out, a, t1);
-    return ray3.get(out, a, t0);
+    if (t0 < 0) return getAtParameter(out, a, t1);
+    return getAtParameter(out, a, t0);
 };
 
 
@@ -658,7 +679,7 @@ ray3.intersectsBox3 = (function ()
     return function (a, b)
     {
         if (!vec3_0) vec3_0 = vec3.create();
-        return ray3.vec3_0 = ray3.getIntersectBox3(vec3_0, a, b) !== null;
+        return ray3.getIntersectBox3(vec3_0, a, b) !== null;
     };
 })();
 
@@ -782,9 +803,9 @@ ray3.normalize = function (out, a)
     }
     else
     {
-        out[1] = 0;
-        out[2] = 0;
         out[3] = 0;
+        out[4] = 0;
+        out[5] = 0;
         throw new Error("Normalization error");
     }
 
@@ -801,9 +822,11 @@ ray3.normalize = function (out, a)
  */
 ray3.recast = function (out, a, t)
 {
-    out[0] = a[0] + (a[3] * t);
-    out[1] = a[1] + (a[4] * t);
-    out[2] = a[2] + (a[5] * t);
+    const length = Math.hypot(a[3], a[4], a[5]);
+    const scale = length === 0 ? 0 : t / length;
+    out[0] = a[0] + (a[3] * scale);
+    out[1] = a[1] + (a[4] * scale);
+    out[2] = a[2] + (a[5] * scale);
     out[3] = a[3];
     out[4] = a[4];
     out[5] = a[5];
@@ -818,7 +841,11 @@ ray3.recast = function (out, a, t)
  * @param {vec3} endProp
  * @returns {ray3} out
  */
-ray3.set = box3.set;
+ray3.set = function (out, originX, originY, originZ, directionX, directionY, directionZ)
+{
+    box3.set(out, originX, originY, originZ, directionX, directionY, directionZ);
+    return directionX || directionY || directionZ ? ray3.normalize(out, out) : out;
+};
 
 /**
  * Ray3 generic sorting
@@ -857,14 +884,16 @@ ray3.squaredDistance = (function ()
         vec3_0[1] = p[1] - a[1];
         vec3_0[2] = p[2] - a[2];
 
-        let dirDist = vec3_0[0] * a[3] + vec3_0[1] * a[4] + vec3_0[2] * a[5];
+        const directionLengthSquared = a[3] * a[3] + a[4] * a[4] + a[5] * a[5];
+        let dirDist = directionLengthSquared === 0 ? 0 :
+            (vec3_0[0] * a[3] + vec3_0[1] * a[4] + vec3_0[2] * a[5]) / directionLengthSquared;
         if (dirDist < 0)
         {
             ray3.getOrigin(vec3_1, a);
             return vec3.squaredDistance(vec3_1, p); // could just pass in the ray3
         }
 
-        ray3.get(vec3_0, a, dirDist);
+        getAtParameter(vec3_0, a, dirDist);
         return vec3.squaredDistance(vec3_0, p);
     };
 })();

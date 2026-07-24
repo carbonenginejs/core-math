@@ -19,8 +19,16 @@ export function createCylinder(options = {})
         thetaLength = Math.PI * 2
     } = options;
 
-    radialSegments = Math.floor(radialSegments);
-    heightSegments = Math.floor(heightSegments);
+    if (![ radiusTop, radiusBottom, height, thetaStart, thetaLength ].every(Number.isFinite) ||
+        height === 0 ||
+        thetaLength === 0 ||
+        (radiusTop === 0 && radiusBottom === 0))
+    {
+        throw new Error("Invalid cylinder dimensions");
+    }
+
+    radialSegments = Math.max(3, Math.floor(Number.isFinite(radialSegments) ? radialSegments : 32));
+    heightSegments = Math.max(1, Math.floor(Number.isFinite(heightSegments) ? heightSegments : 1));
 
     // buffers
     const
@@ -101,11 +109,13 @@ export function createCylinder(options = {})
                     a = indexArray[y][x],
                     b = indexArray[y + 1][x],
                     c = indexArray[y + 1][x + 1],
-                    d = indexArray[y][x + 1];
+                    d = indexArray[y][x + 1],
+                    upperRadius = (y / heightSegments) * (radiusBottom - radiusTop) + radiusTop,
+                    lowerRadius = ((y + 1) / heightSegments) * (radiusBottom - radiusTop) + radiusTop;
 
                 // faces
-                indices.push(a, b, d);
-                indices.push(b, c, d);
+                if (upperRadius !== 0) indices.push(a, b, d);
+                if (lowerRadius !== 0) indices.push(b, c, d);
             }
         }
     }

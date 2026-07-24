@@ -9,6 +9,7 @@
 import {
     generateBiNormals,
     generateNormals,
+    generateTangentFrames,
     generateTangents
 } from "./mesh.js";
 import { packTangentFrames } from "./tangent.js";
@@ -94,10 +95,9 @@ export function calculatePackedTangents(indices, positions, uvs, areas, normals,
     const
         faces = facesForAreas(indices, areas),
         normalValues = normals && normals.length ? normals : generateNormals(positions, faces),
-        tangentValues = generateTangents(positions, normalValues, uvs, faces),
-        binormalValues = generateBiNormals(normalValues, tangentValues, options);
+        frame = generateTangentFrames(positions, normalValues, uvs, faces, options);
 
-    return packTangentFrames(normalValues, tangentValues, binormalValues);
+    return packTangentFrames(normalValues, frame.tangents, frame.binormals);
 }
 
 export const vertex = Object.freeze({
@@ -106,4 +106,3 @@ export const vertex = Object.freeze({
     calculateBiNormals,
     calculatePackedTangents
 });
-

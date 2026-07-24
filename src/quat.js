@@ -1,6 +1,4 @@
-// @ts-self-types="./quat.d.ts"
 import * as glQuat from "gl-matrix/esm/quat.js";
-import { dot as vec3Dot } from "gl-matrix/esm/vec3.js";
 import { EPSILON } from "./num.js";
 import { pool } from "./pool.js";
 
@@ -36,30 +34,38 @@ quat.unalloc = function(a)
  */
 quat.fromUnitVectors = function(out, from, to)
 {
-    let r = vec3Dot(from, to) + 1;
+    const
+        fromX = from[0],
+        fromY = from[1],
+        fromZ = from[2],
+        toX = to[0],
+        toY = to[1],
+        toZ = to[2];
+
+    let r = fromX * toX + fromY * toY + fromZ * toZ + 1;
     if (r < EPSILON)
     {
         r = 0;
-        if (Math.abs(from[0]) > Math.abs(from[2]))
+        if (Math.abs(fromX) > Math.abs(fromZ))
         {
-            out[0] = -from[1];
-            out[1] = from[0];
+            out[0] = -fromY;
+            out[1] = fromX;
             out[2] = 0;
             out[3] = r;
         }
         else
         {
             out[0] = 0;
-            out[1] = - from[2];
-            out[2] = from[1];
+            out[1] = -fromZ;
+            out[2] = fromY;
             out[3] = r;
         }
     }
     else
     {
-        out[0] = from[1] * to[2] - from[2] * to[1];
-        out[1] = from[2] * to[0] - from[0] * to[2];
-        out[2] = from[0] * to[1] - from[1] * to[0];
+        out[0] = fromY * toZ - fromZ * toY;
+        out[1] = fromZ * toX - fromX * toZ;
+        out[2] = fromX * toY - fromY * toX;
         out[3] = r;
     }
     return quat.normalize(out, out);

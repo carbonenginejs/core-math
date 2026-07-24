@@ -1,4 +1,3 @@
-// @ts-self-types="./is.d.ts"
 
 import { equals } from "./num.js";
 
@@ -37,9 +36,13 @@ export function isSet(o)
 
 /**
  * Checks if an object is iterable
- * @type {function(*)}
+ * @param {*} a
+ * @returns {boolean}
  */
-export const isIterable = isObjectObject;
+export function isIterable(a)
+{
+    return a !== null && a !== undefined && typeof a[Symbol.iterator] === "function";
+}
 
 /**
  * Checks if a value is an array
@@ -87,7 +90,7 @@ export function isBoolean(a)
  */
 export function isCanvas(a)
 {
-    return !!(a && a instanceof HTMLCanvasElement);
+    return typeof HTMLCanvasElement !== "undefined" && a instanceof HTMLCanvasElement;
 }
 
 /**
@@ -122,7 +125,7 @@ export function isDescriptor(a)
  */
 export function isDNA(a)
 {
-    return isString(a) && a.match(/(\w|\d|[-_])+:(\w|\d|[-_])+:(\w|\d|[-_])+/);
+    return isString(a) && /^[\w-]+:[\w-]+:[\w-]+$/.test(a);
 }
 
 /**
@@ -132,7 +135,7 @@ export function isDNA(a)
  */
 export function isError(a)
 {
-    return a ? a instanceof Error || a.constructor.__category === "Error" : false;
+    return !!(a && (a instanceof Error || a.constructor?.__category === "Error"));
 }
 
 /**
@@ -507,13 +510,8 @@ export function isEqual(a, b)
     for (let i = 0; i < aKeys.length; i++)
     {
         let key = aKeys[i];
-        if (!b.hasOwnProperty(key)) return false;
+        if (!Object.prototype.hasOwnProperty.call(b, key)) return false;
         if (!isEqual(a[key], b[key])) return false;
-    }
-
-    for (let i = 0; i < bKeys.length; i++)
-    {
-        if (a.hasOwnProperty(bKeys[i])) return false;
     }
 
     return true;

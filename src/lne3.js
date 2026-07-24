@@ -92,7 +92,7 @@ lne3.closestPointToPointParameter = function(a, point, clampToLine)
 
     let startEnd2 = startEnd[0] * startEnd[0] + startEnd[1] * startEnd[1] + startEnd[2] * startEnd[2],
         startEnd_startP = startEnd[0] * startP[0] + startEnd[1] * startP[1] + startEnd[2] * startP[2],
-        t = startEnd_startP / startEnd2;
+        t = startEnd2 === 0 ? 0 : startEnd_startP / startEnd2;
 
     vec3.unalloc(startP);
     vec3.unalloc(startEnd);
@@ -273,8 +273,11 @@ lne3.getCenter = function(out, a)
  */
 lne3.getClosestPointToPoint = function(out, a, point, clampToLine)
 {
-    // const x = a.subarray(0, 3);
-    return lne3.get(out, a, lne3.closestPointToPointParameter(a, point, clampToLine));
+    const t = lne3.closestPointToPointParameter(a, point, clampToLine);
+    out[0] = (a[3] - a[0]) * t + a[0];
+    out[1] = (a[4] - a[1]) * t + a[1];
+    out[2] = (a[5] - a[2]) * t + a[2];
+    return out;
 };
 
 /**
@@ -324,7 +327,8 @@ lne3.intersectsNormalConstant = function(a, n, c)
         startSign = (n[0] * a[0] + n[1] * a[1] + n[2] * a[2]) + c,
         endSign = (n[0] * a[3] + n[1] * a[4] + n[2] * a[5]) + c;
 
-    return (startSign < 0 && endSign > 0) || (endSign < 0 && startSign > 0);
+    return startSign === 0 || endSign === 0 ||
+        (startSign < 0 && endSign > 0) || (endSign < 0 && startSign > 0);
 };
 
 /**
@@ -420,15 +424,20 @@ lne3.transformMat4 = function(out, a, m)
         az = a[2],
         bx = a[3],
         by = a[4],
-        bz = a[5];
+        bz = a[5],
+        aw = m[3] * ax + m[7] * ay + m[11] * az + m[15],
+        bw = m[3] * bx + m[7] * by + m[11] * bz + m[15];
 
-    out[0] = m[0] * ax + m[4] * ay + m[8] * az + m[12];
-    out[1] = m[1] * ax + m[5] * ay + m[9] * az + m[13];
-    out[2] = m[2] * ax + m[6] * ay + m[10] * az + m[14];
+    aw = aw || 1;
+    bw = bw || 1;
 
-    out[3] = m[0] * bx + m[4] * by + m[8] * bz + m[12];
-    out[4] = m[1] * bx + m[5] * by + m[9] * bz + m[13];
-    out[5] = m[2] * bx + m[6] * by + m[10] * bz + m[14];
+    out[0] = (m[0] * ax + m[4] * ay + m[8] * az + m[12]) / aw;
+    out[1] = (m[1] * ax + m[5] * ay + m[9] * az + m[13]) / aw;
+    out[2] = (m[2] * ax + m[6] * ay + m[10] * az + m[14]) / aw;
+
+    out[3] = (m[0] * bx + m[4] * by + m[8] * bz + m[12]) / bw;
+    out[4] = (m[1] * bx + m[5] * by + m[9] * bz + m[13]) / bw;
+    out[5] = (m[2] * bx + m[6] * by + m[10] * bz + m[14]) / bw;
 
     return out;
 };

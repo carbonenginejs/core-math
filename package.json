@@ -27,8 +27,7 @@
     "./vertex": "./src/vertex.js",
     "./mesh": "./src/mesh.js",
     "./tangent": "./src/tangent.js",
-    "./geometry": "./src/geometry/index.js",
-    "./types": "./src/types.ts"
+    "./geometry": "./src/geometry/index.js"
   },
   "sideEffects": false,
   "engines": {

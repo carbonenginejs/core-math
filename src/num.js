@@ -1,4 +1,3 @@
-// @ts-self-types="./num.d.ts"
 export const num = {};
 
 num.EPSILON = 0.000001;
@@ -89,20 +88,18 @@ num.degreesUnwrapped = function (a)
  * @param value
  * @return {Number}
  */
-num.dwordToFloat = function (value)
+num.dwordToFloat = (function ()
 {
     const
-        b4 = (value & 0xff),
-        b3 = (value & 0xff00) >> 8,
-        b2 = (value & 0xff0000) >> 16,
-        b1 = (value & 0xff000000) >> 24,
-        sign = 1 - (2 * (b1 >> 7)), // sign = bit 0
-        exp = (((b1 << 1) & 0xff) | (b2 >> 7)) - 127, // exponent = bits 1..8
-        sig = ((b2 & 0x7f) << 16) | (b3 << 8) | b4; // significand = bits 9..31
+        words = new Uint32Array(1),
+        floats = new Float32Array(words.buffer);
 
-    if (sig === 0 && exp === -127) return 0.0;
-    return sign * (1 + sig * Math.pow(2, -23)) * Math.pow(2, exp);
-};
+    return function (value)
+    {
+        words[0] = value >>> 0;
+        return floats[0];
+    };
+}());
 
 /**
  * Checks if a number equals another
@@ -193,7 +190,16 @@ num.floor = Math.floor;
  */
 num.getLongWordOrder = function (a)
 {
-    return (a === 0 || a === 255 || a === -16777216) ? 0 : 1 + num.getLongWordOrder(a >> 8);
+    let value = a >>> 0,
+        order = 0;
+
+    while (order < 3 && value !== 0 && (value & 0xff) === 0)
+    {
+        value >>>= 8;
+        order++;
+    }
+
+    return order;
 };
 
 /**
@@ -217,7 +223,7 @@ num.greaterThan = function (a, b)
  */
 num.greaterThanEqual = function (a, b)
 {
-    return num.isEqual(a, b) || a > b ? 1 : 0;
+    return a === b || num.equals(a, b) || a > b ? 1 : 0;
 };
 
 /**
@@ -297,7 +303,7 @@ num.isOdd = function (a)
  */
 num.isPowerOfTwo = function (a)
 {
-    return (a & (a - 1)) === 0 && a !== 0;
+    return Number.isSafeInteger(a) && a > 0 && Number.isInteger(Math.log2(a));
 };
 
 /**
@@ -321,7 +327,7 @@ num.lessThan = function (a, b)
  */
 num.lessThanEqual = function (a, b)
 {
-    return num.isEqual(a, b) || a < b ? 1 : 0;
+    return a === b || num.equals(a, b) || a < b ? 1 : 0;
 };
 
 /**
@@ -382,7 +388,7 @@ num.normalizeInt = function (value, start, end, precision)
 {
     let width = end - start;
     let offsetValue = value - start;
-    let result = (offsetValue - ((offsetValue / width) * width)) + start;
+    let result = (offsetValue - (Math.floor(offsetValue / width) * width)) + start;
     return precision === undefined ? result : Number(result.toFixed(precision));
 };
 
@@ -583,57 +589,65 @@ num.smootherStep = function (a, min, max)
  */
 num.toHalfFloat = (function ()
 {
-    let floatView, int32View;
+    const
+        floats = new Float32Array(1),
+        words = new Uint32Array(floats.buffer);
 
     return function (a)
     {
-        if (!floatView)
+        floats[0] = a;
+
+        const
+            word = words[0],
+            sign = (word >>> 16) & 0x8000,
+            exponent = (word >>> 23) & 0xff;
+
+        let mantissa = word & 0x7fffff;
+
+        if (exponent === 0xff)
         {
-            floatView = new Float32Array(1);
-            int32View = new Int32Array(floatView.buffer);
+            return sign | 0x7c00 | (mantissa ? 0x0200 : 0);
         }
 
-        floatView[0] = a;
-        const x = int32View[0];
-
-        let bits = (x >> 16) & 0x8000;
-        /* Get the sign */
-        let m = (x >> 12) & 0x07ff;
-        /* Keep one extra bit for rounding */
-        let e = (x >> 23) & 0xff;
-        /* Using int is faster here */
-
-        /* If zero, or denormal, or exponent underflows too much for a denormal half, return signed zero. */
-        if (e < 103)
+        let halfExponent = exponent - 127 + 15;
+        if (halfExponent >= 0x1f)
         {
-            return bits;
+            return sign | 0x7c00;
         }
 
-        /* If NaN, return NaN. If Inf or exponent overflow, return Inf. */
-        if (e > 142)
+        if (halfExponent <= 0)
         {
-            bits |= 0x7c00;
-            /* If exponent was 0xff and one mantissa bit was set, it means NaN,
-                 * not Inf, so make sure we set one mantissa bit too. */
-            bits |= ((e === 255) ? 0 : 1) && (x & 0x007fffff);
-            return bits;
+            if (halfExponent < -10) return sign;
+
+            mantissa |= 0x800000;
+            const
+                shift = 14 - halfExponent,
+                halfway = 1 << (shift - 1),
+                remainder = mantissa & ((1 << shift) - 1);
+
+            let halfMantissa = mantissa >>> shift;
+            if (remainder > halfway || (remainder === halfway && (halfMantissa & 1)))
+            {
+                halfMantissa++;
+            }
+            return sign | halfMantissa;
         }
 
-        /* If exponent underflows but not too much, return a denormal */
-        if (e < 113)
+        let halfMantissa = mantissa >>> 13;
+        const remainder = mantissa & 0x1fff;
+        if (remainder > 0x1000 || (remainder === 0x1000 && (halfMantissa & 1)))
         {
-            m |= 0x0800;
-            /* Extra rounding may overflow and set mantissa to 0 and exponent to 1, which is OK. */
-            bits |= (m >> (114 - e)) + ((m >> (113 - e)) & 1);
-            return bits;
+            halfMantissa++;
+            if (halfMantissa === 0x400)
+            {
+                halfMantissa = 0;
+                halfExponent++;
+                if (halfExponent >= 0x1f) return sign | 0x7c00;
+            }
         }
 
-        bits |= ((e - 112) << 10) | (m >> 1);
-        /* Extra rounding. An overflow will set mantissa to 0 and increment the exponent, which is OK. */
-        bits += m & 1;
-        return bits;
+        return sign | (halfExponent << 10) | halfMantissa;
     };
-
 }());
 
 /**
@@ -643,7 +657,7 @@ num.toHalfFloat = (function ()
  */
 num.colorFromLinear = function (a)
 {
-    return Math.min(Math.floor(a * 255), 255);
+    return Math.max(0, Math.min(Math.floor(a * 255), 255));
 };
 
 /**

@@ -1,4 +1,3 @@
-// @ts-self-types="./utils.d.ts"
 
 /**
  * Convert a nullable, scalar, or array-like value into an array.
@@ -25,10 +24,18 @@ export function toArray(value)
  */
 export function copyArrayLike(target, value)
 {
-    const length = Math.min(target.length, value.length);
+    const
+        length = Math.min(target.length, value.length),
+        source = new Array(length);
+
     for (let i = 0; i < length; i++)
     {
-        target[i] = value[i];
+        source[i] = value[i];
+    }
+
+    for (let i = 0; i < length; i++)
+    {
+        target[i] = source[i];
     }
     return target;
 }

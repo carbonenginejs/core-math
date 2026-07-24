@@ -1,7 +1,5 @@
-// @ts-self-types="./mat4.d.ts"
 import * as glMat4 from "gl-matrix/esm/mat4.js";
 import {
-    copy as copyVec3,
     cross as crossVec3,
     dot as dotVec3,
     normalize as normalizeVec3,
@@ -24,9 +22,101 @@ export { mat4 };
  */
 mat4.decompose = function (m, rotation, translation, scaling)
 {
-    mat4.getRotation(rotation, m);
-    mat4.getTranslation(translation, m);
-    mat4.getScaling(scaling, m);
+    let
+        scaleX = Math.hypot(m[0], m[1], m[2]),
+        scaleY = Math.hypot(m[4], m[5], m[6]),
+        scaleZ = Math.hypot(m[8], m[9], m[10]);
+
+    if (mat4.determinant(m) < 0) scaleX = -scaleX;
+
+    translation[0] = m[12];
+    translation[1] = m[13];
+    translation[2] = m[14];
+    scaling[0] = scaleX;
+    scaling[1] = scaleY;
+    scaling[2] = scaleZ;
+
+    const nonZeroScaleCount = Number(scaleX !== 0) + Number(scaleY !== 0) + Number(scaleZ !== 0);
+    if (nonZeroScaleCount > 0)
+    {
+        const normalized = pool.allocF32(16);
+        mat4.copy(normalized, m);
+
+        if (scaleX !== 0)
+        {
+            normalized[0] /= scaleX;
+            normalized[1] /= scaleX;
+            normalized[2] /= scaleX;
+        }
+        if (scaleY !== 0)
+        {
+            normalized[4] /= scaleY;
+            normalized[5] /= scaleY;
+            normalized[6] /= scaleY;
+        }
+        if (scaleZ !== 0)
+        {
+            normalized[8] /= scaleZ;
+            normalized[9] /= scaleZ;
+            normalized[10] /= scaleZ;
+        }
+
+        if (nonZeroScaleCount >= 2 && scaleX === 0)
+        {
+            normalized[0] = normalized[5] * normalized[10] - normalized[6] * normalized[9];
+            normalized[1] = normalized[6] * normalized[8] - normalized[4] * normalized[10];
+            normalized[2] = normalized[4] * normalized[9] - normalized[5] * normalized[8];
+        }
+        else if (nonZeroScaleCount >= 2 && scaleY === 0)
+        {
+            normalized[4] = normalized[9] * normalized[2] - normalized[10] * normalized[1];
+            normalized[5] = normalized[10] * normalized[0] - normalized[8] * normalized[2];
+            normalized[6] = normalized[8] * normalized[1] - normalized[9] * normalized[0];
+        }
+        else if (nonZeroScaleCount >= 2 && scaleZ === 0)
+        {
+            normalized[8] = normalized[1] * normalized[6] - normalized[2] * normalized[5];
+            normalized[9] = normalized[2] * normalized[4] - normalized[0] * normalized[6];
+            normalized[10] = normalized[0] * normalized[5] - normalized[1] * normalized[4];
+        }
+        else if (nonZeroScaleCount === 1)
+        {
+            const
+                x = normalized.subarray(0, 3),
+                y = normalized.subarray(4, 7),
+                z = normalized.subarray(8, 11);
+
+            if (scaleX !== 0)
+            {
+                const helper = Math.abs(x[1]) < 0.9 ? [ 0, 1, 0 ] : [ 0, 0, 1 ];
+                normalizeVec3(z, crossVec3(z, x, helper));
+                crossVec3(y, z, x);
+            }
+            else if (scaleY !== 0)
+            {
+                const helper = Math.abs(y[2]) < 0.9 ? [ 0, 0, 1 ] : [ 1, 0, 0 ];
+                normalizeVec3(x, crossVec3(x, y, helper));
+                crossVec3(z, x, y);
+            }
+            else
+            {
+                const helper = Math.abs(z[1]) < 0.9 ? [ 0, 1, 0 ] : [ 1, 0, 0 ];
+                normalizeVec3(x, crossVec3(x, helper, z));
+                crossVec3(y, z, x);
+            }
+        }
+
+        mat4.getRotation(rotation, normalized);
+        pool.freeType(normalized);
+    }
+    else
+    {
+        rotation[0] = 0;
+        rotation[1] = 0;
+        rotation[2] = 0;
+        rotation[3] = 1;
+    }
+
     return m;
 };
 
@@ -93,6 +183,12 @@ mat4.arcFromForward = function (out, v)
     const norm = normalizeVec3(pool.allocF32(3), v);
 
     mat4.identity(out);
+
+    if (squaredLengthVec3(v) === 0)
+    {
+        pool.freeType(norm);
+        return out;
+    }
 
     if (norm[2] < -0.99999)
     {
@@ -214,12 +310,18 @@ mat4.lookAtD3D = function (out, eye, center, up)
 
     if (squaredLengthVec3(x) === 0)
     {
-        // nudge z slightly if up is parallel
-        if (Math.abs(up[2]) === 1) z[0] += 0.0001;
-        else z[2] += 0.0001;
-
-        normalizeVec3(z, z);
-        crossVec3(x, up, z);
+        if (Math.abs(z[1]) < 0.999)
+        {
+            x[0] = z[2];
+            x[1] = 0;
+            x[2] = -z[0];
+        }
+        else
+        {
+            x[0] = 0;
+            x[1] = -z[2];
+            x[2] = z[1];
+        }
     }
 
     normalizeVec3(x, x);
@@ -227,10 +329,10 @@ mat4.lookAtD3D = function (out, eye, center, up)
     // y = cross(z, x)
     crossVec3(y, z, x);
 
-    // Rotation (axes in columns)
-    out[0] = x[0]; out[1] = x[1]; out[2]  = x[2];  out[3]  = 0;
-    out[4] = y[0]; out[5] = y[1]; out[6]  = y[2];  out[7]  = 0;
-    out[8] = z[0]; out[9] = z[1]; out[10] = z[2];  out[11] = 0;
+    // View rotation (camera axes in rows)
+    out[0] = x[0]; out[1] = y[0]; out[2]  = z[0];  out[3]  = 0;
+    out[4] = x[1]; out[5] = y[1]; out[6]  = z[1];  out[7]  = 0;
+    out[8] = x[2]; out[9] = y[2]; out[10] = z[2];  out[11] = 0;
 
     // Translation
     out[12] = -dotVec3(x, eye);
@@ -283,7 +385,7 @@ mat4.setLookRotation = function (out, m, eye, center, up)
     normalizeVec3(z, z);
 
     // Pick a stable up if the provided up is too aligned with z
-    copyVec3(u, up);
+    normalizeVec3(u, up);
 
     // if |dot(up, z)| is ~1 then up × z is unstable
     const dz = Math.abs(u[0] * z[0] + u[1] * z[1] + u[2] * z[2]);
@@ -355,25 +457,15 @@ mat4.setLookRotation = function (out, m, eye, center, up)
  */
 mat4.maxScaleOnAxis = function (a)
 {
-    let m11 = a[0],
-        m12 = a[4],
-        m13 = a[8],
-        m21 = a[1],
-        m22 = a[5],
-        m23 = a[9],
-        m31 = a[2],
-        m32 = a[6],
-        m33 = a[10];
-
-    let x = m11 * m11 + m12 * m12 + m13 * m13,
-        y = m21 * m21 + m22 * m22 + m23 * m23,
-        z = m31 * m31 + m32 * m32 + m33 * m33;
+    let x = a[0] * a[0] + a[1] * a[1] + a[2] * a[2],
+        y = a[4] * a[4] + a[5] * a[5] + a[6] * a[6],
+        z = a[8] * a[8] + a[9] * a[9] + a[10] * a[10];
 
     return Math.sqrt(Math.max(x, y, z));
 };
 
 /**
- * Sets a left handed co-ordinate system perspective from a right handed co-ordinate system
+ * Sets an OpenGL-style right-handed perspective with NDC depth in [-1, 1]
  * @param {mat4} out        - receiving mat4
  * @param {number} fovY     - Vertical field of view in radians
  * @param {number} aspect   - Aspect ratio. typically viewport width/height
@@ -383,7 +475,7 @@ mat4.maxScaleOnAxis = function (a)
  */
 mat4.perspectiveGL = function (out, fovY, aspect, near, far)
 {
-    let fH = Math.tan(fovY / 360 * Math.PI) * near;
+    let fH = Math.tan(fovY * 0.5) * near;
     let fW = fH * aspect;
     mat4.frustum(out, -fW, fW, -fH, fH, near, far);
     return out;

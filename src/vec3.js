@@ -1,4 +1,3 @@
-// @ts-self-types="./vec3.d.ts"
 import * as glVec3 from "gl-matrix/esm/vec3.js";
 import {
     fromQuat as mat4FromQuat,
@@ -838,6 +837,11 @@ vec3.fromHex = function (out, hex)
     out[1] = 0;
     out[2] = 0;
 
+    if (typeof hex !== "string" || !/^#(?:[\da-f]{3,4}|[\da-f]{6}|[\da-f]{8})$/i.test(hex))
+    {
+        throw new TypeError("Invalid hex");
+    }
+
     if (hex.length === 4 || hex.length === 5)
     {
         out[0] = ("0x" + hex[1] + hex[1]) / 255;
@@ -851,11 +855,6 @@ vec3.fromHex = function (out, hex)
         out[1] = ("0x" + hex[3] + hex[4]) / 255;
         out[2] = ("0x" + hex[5] + hex[6]) / 255;
     }
-    else
-    {
-        throw new TypeError("Invalid hex");
-    }
-
     return out;
 };
 

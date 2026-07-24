@@ -16,9 +16,34 @@ export const curve = {};
 curve.evaluate = function(curve, time, value, cycle, duration)
 {
     let count = curve.knots.length;
+    if (!count || !curve.dimension || !curve.controls.length) return value;
+
+    const lastKnot = curve.knots[count - 1];
+    if (cycle)
+    {
+        duration = duration > 0 ? duration : lastKnot;
+        if (duration > 0)
+        {
+            time = ((time % duration) + duration) % duration;
+        }
+    }
+    else if (time <= curve.knots[0] || time >= lastKnot)
+    {
+        const control = time <= curve.knots[0] ? 0 : count - 1;
+        for (let i = 0; i < curve.dimension; ++i)
+        {
+            value[i] = curve.controls[control * curve.dimension + i];
+        }
+        return value;
+    }
+
     let knot = count - 1;
     let t = 0;
-    for (let i = 0; i < curve.knots.length; ++i)
+    if (cycle && (time < curve.knots[0] || time >= lastKnot))
+    {
+        knot = 0;
+    }
+    else for (let i = 0; i < curve.knots.length; ++i)
     {
         if (curve.knots[i] > time)
         {
@@ -36,18 +61,21 @@ curve.evaluate = function(curve, time, value, cycle, duration)
     }
     else if (curve.degree === 1)
     {
-        let knot0 = cycle ? (knot + count - 1) % count : knot === 0 ? 0 : knot - 1;
-        let dt = curve.knots[knot] - curve.knots[knot0];
+        const knot0 = cycle ? (knot + count - 1) % count : knot === 0 ? 0 : knot - 1;
+        let
+            start = curve.knots[knot0],
+            end = curve.knots[knot],
+            localTime = time;
 
-        if (dt < 0)
+        if (cycle && end < start)
         {
-            dt += duration;
+            end += duration;
         }
-
-        if (dt > 0)
+        if (cycle && localTime < start)
         {
-            t = (time - curve.knots[curve.knots.length - 1]) / dt;
+            localTime += duration;
         }
+        t = end !== start ? (localTime - start) / (end - start) : 0;
 
         for (let i = 0; i < curve.dimension; ++i)
         {
@@ -56,7 +84,7 @@ curve.evaluate = function(curve, time, value, cycle, duration)
     }
     else
     {
-        let k_2 = cycle ? (knot + count - 2) % count : knot === 0 ? 0 : knot - 2;
+        let k_2 = cycle ? (knot + count - 2) % count : knot === 0 ? 0 : Math.max(0, knot - 2);
         let k_1 = cycle ? (knot + count - 1) % count : knot === 0 ? 0 : knot - 1;
 
         let p1 = (k_2) * curve.dimension;
@@ -93,9 +121,9 @@ curve.evaluate = function(curve, time, value, cycle, duration)
         let dL1_1 = ti - ti_2;
         let dL1_2 = ti1 - ti_1;
 
-        let L0 = tmti_1 / dL0;
-        let L1_1 = tmti_2 / dL1_1;
-        let L1_2 = tmti_1 / dL1_2;
+        let L0 = dL0 !== 0 ? tmti_1 / dL0 : 0;
+        let L1_1 = dL1_1 !== 0 ? tmti_2 / dL1_1 : 0;
+        let L1_2 = dL1_2 !== 0 ? tmti_1 / dL1_2 : 0;
 
         let ci_2 = (L1_1 + L0) - L0 * L1_1;
         let ci = L0 * L1_2;
@@ -107,6 +135,7 @@ curve.evaluate = function(curve, time, value, cycle, duration)
             value[i] = ci_2 * curve.controls[p1 + i] + ci_1 * curve.controls[p2 + i] + ci * curve.controls[p3 + i];
         }
     }
+    return value;
 };
 
 /**

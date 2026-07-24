@@ -11,6 +11,30 @@ import {
     normalize
 } from "gl-matrix/esm/vec3.js";
 
+function validatePositions(positions)
+{
+    if (!positions || positions.length % 3 !== 0)
+    {
+        throw new Error("Positions must contain complete xyz vertices");
+    }
+}
+
+function validateIndices(indices, vertexCount)
+{
+    if (!indices || indices.length % 3 !== 0)
+    {
+        throw new Error("Indices must contain complete triangles");
+    }
+
+    for (let i = 0; i < indices.length; i++)
+    {
+        if (!Number.isInteger(indices[i]) || indices[i] < 0 || indices[i] >= vertexCount)
+        {
+            throw new Error(`Invalid vertex index at ${i}`);
+        }
+    }
+}
+
 /**
  * Calculate the unit face normal for a triangle.
  *
@@ -71,6 +95,8 @@ export function isDegenerateTriangle(a, b, c, epsilon = 1e-12)
  */
 export function computeBoundsFromPositions(positions)
 {
+    validatePositions(positions);
+
     if (!positions.length)
     {
         return { minBounds: [ 0, 0, 0 ], maxBounds: [ 0, 0, 0 ] };
@@ -110,16 +136,23 @@ export function computeBoundsFromTriangles(triangles)
         minBounds = [ Infinity, Infinity, Infinity ],
         maxBounds = [ -Infinity, -Infinity, -Infinity ];
 
+    let hasVertex = false;
     for (const triangle of triangles)
     {
         for (const vertex of triangle.vertices)
         {
+            hasVertex = true;
             for (let c = 0; c < 3; c++)
             {
                 if (vertex[c] < minBounds[c]) minBounds[c] = vertex[c];
                 if (vertex[c] > maxBounds[c]) maxBounds[c] = vertex[c];
             }
         }
+    }
+
+    if (!hasVertex)
+    {
+        return { minBounds: [ 0, 0, 0 ], maxBounds: [ 0, 0, 0 ] };
     }
 
     return { minBounds, maxBounds };
@@ -134,6 +167,9 @@ export function computeBoundsFromTriangles(triangles)
  */
 export function generateNormals(positions, indices)
 {
+    validatePositions(positions);
+    validateIndices(indices, positions.length / 3);
+
     const
         vertexCount = positions.length / 3,
         normals = new Float32Array(positions.length);
@@ -188,10 +224,19 @@ export function generateNormals(positions, indices)
  */
 export function generateTangents(positions, normals, uvs, indices)
 {
+    validatePositions(positions);
+
     const
         vertexCount = positions.length / 3,
         tan1 = new Float32Array(vertexCount * 3),
         tan2 = new Float32Array(vertexCount * 3);
+
+    if (!normals || normals.length !== positions.length ||
+        !uvs || uvs.length !== vertexCount * 2)
+    {
+        throw new Error("Tangent channels do not match the vertex count");
+    }
+    validateIndices(indices, vertexCount);
 
     for (let t = 0; t < indices.length; t += 3)
     {
@@ -235,7 +280,10 @@ export function generateTangents(positions, normals, uvs, indices)
         }
     }
 
-    const tangents = new Float32Array(vertexCount * 3);
+    const
+        tangents = new Float32Array(vertexCount * 3),
+        handedness = new Float32Array(vertexCount);
+
     for (let i = 0; i < vertexCount; i++)
     {
         const
@@ -261,9 +309,35 @@ export function generateTangents(positions, normals, uvs, indices)
         tangents[offset] = ox;
         tangents[offset + 1] = oy;
         tangents[offset + 2] = oz;
+        handedness[i] = (
+            (ny * oz - nz * oy) * tan2[offset] +
+            (nz * ox - nx * oz) * tan2[offset + 1] +
+            (nx * oy - ny * ox) * tan2[offset + 2]
+        ) < 0 ? -1 : 1;
     }
 
+    Object.defineProperty(tangents, "handedness", { value: handedness });
     return tangents;
+}
+
+/**
+ * Generate a complete tangent frame while preserving per-vertex UV handedness.
+ *
+ * @param {ArrayLike<number>} positions Flat xyz positions.
+ * @param {ArrayLike<number>} normals Flat xyz normals.
+ * @param {ArrayLike<number>} uvs Flat uv coordinates.
+ * @param {ArrayLike<number>} indices Flat triangle indices.
+ * @param {object} [options] Generation options.
+ * @returns {{tangents: Float32Array, binormals: number[], handedness: Float32Array}}
+ */
+export function generateTangentFrames(positions, normals, uvs, indices, options)
+{
+    const
+        tangents = generateTangents(positions, normals, uvs, indices),
+        handedness = tangents.handedness,
+        binormals = generateBiNormals(normals, tangents, { ...options, handedness });
+
+    return { tangents, binormals, handedness };
 }
 
 /**
@@ -275,19 +349,22 @@ export function generateTangents(positions, normals, uvs, indices)
  * @param {"right"|"left"} [options.uvHandedness] Handedness of generated basis.
  * @returns {number[]} Flat xyz binormals.
  */
-export function generateBiNormals(normals, tangents, { uvHandedness = "right" } = {})
+export function generateBiNormals(normals, tangents, options = {})
 {
-    if (normals.length !== tangents.length)
+    if (normals.length !== tangents.length || normals.length % 3 !== 0)
     {
-        throw new Error("generateBiNormals requires normals and tangents with matching lengths");
+        throw new Error("generateBiNormals requires matching complete xyz channels");
     }
 
     const
-        sign = uvHandedness === "left" ? -1 : 1,
+        conventionSign = options.uvHandedness === "left" ? -1 : 1,
         binormals = new Array(normals.length);
 
     for (let i = 0; i < normals.length; i += 3)
     {
+        const
+            vertexSign = options.handedness?.[i / 3] ?? tangents.handedness?.[i / 3] ?? 1,
+            sign = conventionSign * vertexSign;
         const b = normalize(
             [ 0, 0, 0 ],
             [
@@ -312,5 +389,6 @@ export const mesh = Object.freeze({
     computeBoundsFromTriangles,
     generateNormals,
     generateTangents,
+    generateTangentFrames,
     generateBiNormals
 });

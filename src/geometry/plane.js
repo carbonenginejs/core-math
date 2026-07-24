@@ -19,6 +19,11 @@ export function createPlane(options = {})
         heightSegments = 1
     } = options;
 
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width === 0 || height === 0)
+    {
+        throw new Error("Plane dimensions must be finite and non-zero");
+    }
+
     const
         indices = [],
         positions = [],
@@ -28,8 +33,8 @@ export function createPlane(options = {})
     const
         widthHalf = width / 2,
         heightHalf = height / 2,
-        gridX = Math.floor(widthSegments),
-        gridY = Math.floor(heightSegments),
+        gridX = Math.max(1, Math.floor(Number.isFinite(widthSegments) ? widthSegments : 1)),
+        gridY = Math.max(1, Math.floor(Number.isFinite(heightSegments) ? heightSegments : 1)),
         gridX1 = gridX + 1,
         gridY1 = gridY + 1,
         segmentWidth = width / gridX,
@@ -69,8 +74,8 @@ export function createPlane(options = {})
     result.options = {
         width,
         height,
-        widthSegments,
-        heightSegments
+        widthSegments: gridX,
+        heightSegments: gridY
     };
     return result;
 }

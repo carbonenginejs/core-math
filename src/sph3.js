@@ -34,7 +34,10 @@ sph3.unalloc = vec4.unalloc;
  * @param {sph3} a
  * @returns {sph3}
  */
-sph3.$position = pln.$normal;
+sph3.$position = function(a)
+{
+    return a.subarray(0, 3);
+};
 
 /**
  * Clones a sphere
@@ -53,6 +56,8 @@ sph3.clone = vec4.clone;
  */
 sph3.containsPoint = function(a, p)
 {
+    if (sph3.isEmpty(a)) return false;
+
     let x = p[0] - a[0],
         y = p[1] - a[1],
         z = p[2] - a[2];
@@ -76,7 +81,7 @@ sph3.copy = vec4.copy;
  */
 sph3.create = function()
 {
-    return new Float32Array([ 0, 0, 0, 0 ]);
+    return new Float32Array([ 0, 0, 0, -1 ]);
 };
 
 /**
@@ -88,6 +93,8 @@ sph3.create = function()
  */
 sph3.distance = function(a, b)
 {
+    if (sph3.isEmpty(a) || sph3.isEmpty(b)) return Infinity;
+
     let x = b[0] - a[0],
         y = b[1] - a[1],
         z = b[2] - a[2],
@@ -105,6 +112,8 @@ sph3.distance = function(a, b)
  */
 sph3.distanceToPoint = function(a, p)
 {
+    if (sph3.isEmpty(a)) return Infinity;
+
     let x = p[0] - a[0],
         y = p[1] - a[1],
         z = p[2] - a[2];
@@ -122,7 +131,7 @@ sph3.empty = function(a)
     a[0] = 0;
     a[1] = 0;
     a[2] = 0;
-    a[3] = 0;
+    a[3] = -1;
     return a;
 };
 
@@ -182,6 +191,8 @@ sph3.extract = pln.extract;
  */
 sph3.fromBox3 = function(out, b)
 {
+    if (box3.isEmpty(b)) return sph3.empty(out);
+
     let sX = b[3] - b[0],
         sY = b[4] - b[1],
         sZ = b[5] - b[2];
@@ -238,9 +249,10 @@ sph3.from = sph3.fromPositionRadius;
  */
 sph3.fromTranslationRadius = function(out, a, radius)
 {
-    out[0] = a[12];
-    out[1] = a[13];
-    out[2] = a[14];
+    const offset = a.length >= 15 ? 12 : 0;
+    out[0] = a[offset];
+    out[1] = a[offset + 1];
+    out[2] = a[offset + 2];
     out[3] = radius;
     return out;
 };
@@ -276,6 +288,9 @@ let aPosition,
  */
 sph3.union = function(out, a, b)
 {
+    if (sph3.isEmpty(a)) return sph3.copy(out, b);
+    if (sph3.isEmpty(b)) return sph3.copy(out, a);
+
     if (!aPosition)
     {
         aPosition = vec3.create();
@@ -337,6 +352,8 @@ sph3.getClampedPoint = function(out, a, p)
     out[1] = p[1];
     out[2] = p[2];
 
+    if (sph3.isEmpty(a)) return out;
+
     let x = a[0] - p[0],
         y = a[1] - p[1],
         z = a[2] - p[2];
@@ -392,6 +409,8 @@ sph3.getPosition = pln.getNormal;
  */
 sph3.intersectsSph3 = function(a, b)
 {
+    if (sph3.isEmpty(a) || sph3.isEmpty(b)) return false;
+
     let x = b[0] - a[0],
         y = b[1] - a[1],
         z = b[2] - a[2];
@@ -409,7 +428,7 @@ sph3.intersectsSph3 = function(a, b)
  */
 sph3.intersectsBox3 = function(a, b)
 {
-    return box3.intersectsSph3(b, a);
+    return !sph3.isEmpty(a) && !box3.isEmpty(b) && box3.intersectsSph3(b, a);
 };
 
 /**
@@ -422,6 +441,8 @@ sph3.intersectsBox3 = function(a, b)
  */
 sph3.intersectsBounds = function(a, min, max)
 {
+    if (sph3.isEmpty(a) || box3.bounds.isEmpty(min, max)) return false;
+
     let x = Math.max(min[0], Math.min(max[0], a[0])) - a[0],
         y = Math.max(min[1], Math.min(max[1], a[1])) - a[1],
         z = Math.max(min[2], Math.min(max[2], a[2])) - a[2];
@@ -439,6 +460,8 @@ sph3.intersectsBounds = function(a, min, max)
  */
 sph3.intersectsPositionRadius = function(a, p, r)
 {
+    if (sph3.isEmpty(a) || r < 0) return false;
+
     let x = p[0] - a[0],
         y = p[1] - a[1],
         z = p[2] - a[2];
@@ -469,8 +492,12 @@ sph3.intersectsPln = function(a, p)
  */
 sph3.intersectsNormalConstant = function(a, n, c)
 {
-    let distance = a[0] * n[0] + a[1] * n[1] + a[2] * n[2] + c;
-    return Math.abs(distance) <= a[3];
+    if (sph3.isEmpty(a)) return false;
+
+    const
+        distance = a[0] * n[0] + a[1] * n[1] + a[2] * n[2] + c,
+        normalLength = Math.hypot(n[0], n[1], n[2]);
+    return Math.abs(distance) <= a[3] * normalLength;
 };
 
 /**
@@ -481,7 +508,7 @@ sph3.intersectsNormalConstant = function(a, n, c)
  */
 sph3.isEmpty = function(a)
 {
-    return a[3] <= 0;
+    return a[3] < 0;
 };
 
 /**
@@ -524,6 +551,8 @@ sph3.setArray = vec4.setArray;
  */
 sph3.setPoints = function(out, points, position)
 {
+    if (!points.length) return sph3.empty(out);
+
     if (!box3_0) box3_0 = box3.create();
 
     if (position)
@@ -564,12 +593,14 @@ sph3.setPoints = function(out, points, position)
  */
 sph3.squaredDistance = function(a, b)
 {
+    if (sph3.isEmpty(a) || sph3.isEmpty(b)) return Infinity;
+
     let x = b[0] - a[0],
         y = b[1] - a[1],
         z = b[2] - a[2],
-        r = b[3] + a[3];
+        distance = Math.sqrt(x * x + y * y + z * z) - (b[3] + a[3]);
 
-    return (x * x + y * y + z * z) - (r * r);
+    return distance * distance;
 };
 
 /**
@@ -581,11 +612,14 @@ sph3.squaredDistance = function(a, b)
  */
 sph3.squaredDistanceToPoint = function(a, p)
 {
+    if (sph3.isEmpty(a)) return Infinity;
+
     let x = p[0] - a[0],
         y = p[1] - a[1],
-        z = p[2] - a[2];
+        z = p[2] - a[2],
+        distance = Math.sqrt(x * x + y * y + z * z) - a[3];
 
-    return (x * x + y * y + z * z) - a[3] * a[3];
+    return distance * distance;
 };
 
 /**
@@ -637,6 +671,8 @@ sph3.toPositionRadius = function(a, position)
  */
 sph3.transformMat4 = function(out, a, m)
 {
+    if (sph3.isEmpty(a)) return sph3.empty(out);
+
     let x = a[0],
         y = a[1],
         z = a[2];

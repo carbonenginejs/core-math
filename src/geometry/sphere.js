@@ -20,6 +20,14 @@ export function createSphere(options = {})
         thetaLength = Math.PI
     } = options;
 
+    if (![ radius, widthSegments, heightSegments, phiStart, phiLength, thetaStart, thetaLength ].every(Number.isFinite) ||
+        radius <= 0 ||
+        phiLength <= 0 ||
+        thetaLength <= 0)
+    {
+        throw new Error("Invalid sphere dimensions");
+    }
+
     widthSegments = Math.max(3, Math.floor(widthSegments));
     heightSegments = Math.max(2, Math.floor(heightSegments));
 
@@ -99,18 +107,17 @@ export function createSphere(options = {})
     vec3.unalloc(normal);
 
     const result = toJSON(indices, vertices, uvs, normals);
-    result.shape = {
-        factory: createSphere,
-        options: {
-            radius,
-            widthSegments,
-            heightSegments,
-            phiStart,
-            phiLength,
-            thetaStart,
-            thetaLength
-        }
+    result.factory = createSphere;
+    result.options = {
+        radius,
+        widthSegments,
+        heightSegments,
+        phiStart,
+        phiLength,
+        thetaStart,
+        thetaLength
     };
+    result.shape = { factory: result.factory, options: result.options };
 
     return result;
 }

@@ -12,8 +12,16 @@ export function createTorus(options = {})
         arc = Math.PI * 2
     } = options;
 
-    radialSegments = Math.floor(radialSegments);
-    tubularSegments = Math.floor(tubularSegments);
+    if (![ radius, tube, radialSegments, tubularSegments, arc ].every(Number.isFinite) ||
+        radius <= 0 ||
+        tube <= 0 ||
+        arc === 0)
+    {
+        throw new Error("Invalid torus dimensions");
+    }
+
+    radialSegments = Math.max(3, Math.floor(Number.isFinite(radialSegments) ? radialSegments : 12));
+    tubularSegments = Math.max(3, Math.floor(Number.isFinite(tubularSegments) ? tubularSegments : 49));
 
     const
         indices = [],

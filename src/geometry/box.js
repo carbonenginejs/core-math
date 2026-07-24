@@ -25,9 +25,15 @@ export function createBox(options = {})
         depthSegments = 1
     } = options;
 
-    widthSegments = Math.floor(widthSegments);
-    heightSegments = Math.floor(heightSegments);
-    depthSegments = Math.floor(depthSegments);
+    if (![ width, height, depth ].every(Number.isFinite) ||
+        width === 0 || height === 0 || depth === 0)
+    {
+        throw new Error("Box dimensions must be finite and non-zero");
+    }
+
+    widthSegments = Math.max(1, Math.floor(Number.isFinite(widthSegments) ? widthSegments : 1));
+    heightSegments = Math.max(1, Math.floor(Number.isFinite(heightSegments) ? heightSegments : 1));
+    depthSegments = Math.max(1, Math.floor(Number.isFinite(depthSegments) ? depthSegments : 1));
 
     const
         indices = [],
@@ -115,17 +121,16 @@ export function createBox(options = {})
 
     // Normalize
     const result = toJSON(indices, positions, uvs, normals);
-    result.shape = {
-        factory: createBox,
-        options: {
-            width,
-            height,
-            depth,
-            widthSegments,
-            heightSegments,
-            depthSegments
-        }
+    result.factory = createBox;
+    result.options = {
+        width,
+        height,
+        depth,
+        widthSegments,
+        heightSegments,
+        depthSegments
     };
+    result.shape = { factory: result.factory, options: result.options };
     return result;
 
 }

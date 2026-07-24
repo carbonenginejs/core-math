@@ -35,7 +35,49 @@ export function toJSON(indices, positions, uvs, normals, areas, tangents)
         normals = temp;
     }
 
-    areas = toArray(areas || { start: 0, count: indices.length });
+    const vertexCount = positions.length / 3;
+    if (!Number.isInteger(vertexCount) ||
+        indices.length % 3 !== 0 ||
+        uvs.length !== vertexCount * 2)
+    {
+        throw new Error("Invalid geometry channel lengths");
+    }
+
+    for (let i = 0; i < indices.length; i++)
+    {
+        if (!Number.isInteger(indices[i]) || indices[i] < 0 || indices[i] >= vertexCount)
+        {
+            throw new Error(`Invalid vertex index at ${i}`);
+        }
+    }
+
+    if (normals && normals.length && normals.length !== positions.length)
+    {
+        throw new Error("Invalid normal channel length");
+    }
+
+    if (tangents && tangents.length &&
+        tangents.length !== vertexCount * 3 &&
+        tangents.length !== vertexCount * 4)
+    {
+        throw new Error("Invalid tangent channel length");
+    }
+
+    areas = toArray(areas && areas.length !== 0 ? areas : { start: 0, count: indices.length });
+    for (const area of areas)
+    {
+        if (!area ||
+            !Number.isInteger(area.start) ||
+            !Number.isInteger(area.count) ||
+            area.start < 0 ||
+            area.count < 0 ||
+            area.start % 3 !== 0 ||
+            area.count % 3 !== 0 ||
+            area.start + area.count > indices.length)
+        {
+            throw new Error("Invalid geometry area");
+        }
+    }
 
     if (!normals || !normals.length)
     {
@@ -62,11 +104,19 @@ export function toJSON(indices, positions, uvs, normals, areas, tangents)
             },
             indices: areas.map(area =>
             {
+                const faces = indices.slice(area.start, area.start + area.count);
+                const requires32Bit = faces.some(index => index > 0xffff);
+                const bytesPerIndex = area.bytesPerIndex ?? (requires32Bit ? 4 : 2);
+                if ((bytesPerIndex !== 2 && bytesPerIndex !== 4) ||
+                    (bytesPerIndex === 2 && requires32Bit))
+                {
+                    throw new Error("Invalid bytes per index");
+                }
                 return {
-                    bytesPerIndex: area.bytesPerIndex || 2,
+                    bytesPerIndex,
                     start: area.start,
                     count: area.count,
-                    faces: indices.slice(area.start, area.start + area.count)
+                    faces
                 };
             })
         } ]

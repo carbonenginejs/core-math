@@ -87,7 +87,9 @@ pln.create = vec4.create;
  */
 pln.distanceToPoint = function(a, p)
 {
-    return (a[0] * p[0] + a[1] * p[1] + a[2] * p[2]) + a[3];
+    const length = Math.hypot(a[0], a[1], a[2]);
+    const distance = (a[0] * p[0] + a[1] * p[1] + a[2] * p[2]) + a[3];
+    return length === 0 ? distance : distance / length;
 };
 
 /**
@@ -100,7 +102,7 @@ pln.distanceToPoint = function(a, p)
  */
 pln.distanceToPositionRadius = function(a, position, radius)
 {
-    return (a[0] * position[0] + a[1] * position[1] + a[2] * position[2]) + a[3] - radius;
+    return pln.distanceToPoint(a, position) - radius;
 };
 
 /**
@@ -112,7 +114,7 @@ pln.distanceToPositionRadius = function(a, position, radius)
  */
 pln.distanceToSph3 = function(a, sphere)
 {
-    return (a[0] * sphere[0] + a[1] * sphere[1] + a[2] * sphere[2]) + a[3] - sphere[3];
+    return pln.distanceToPoint(a, sphere) - sphere[3];
 };
 
 /**
@@ -126,7 +128,9 @@ pln.distanceToSph3 = function(a, sphere)
  */
 pln.distanceToValues = function(a, px, py, pz)
 {
-    return (a[0] * px + a[1] * py + a[2] * pz) + a[3];
+    const length = Math.hypot(a[0], a[1], a[2]);
+    const distance = (a[0] * px + a[1] * py + a[2] * pz) + a[3];
+    return length === 0 ? distance : distance / length;
 };
 
 /**
@@ -291,9 +295,16 @@ pln.fromNormalAndCoplanarPoint = function(out, normal, point)
  */
 pln.getCoplanarPoint = function(out, a)
 {
-    out[0] = a[0] * -a[3];
-    out[1] = a[1] * -a[3];
-    out[2] = a[2] * -a[3];
+    const lengthSquared = a[0] * a[0] + a[1] * a[1] + a[2] * a[2];
+    if (lengthSquared === 0)
+    {
+        out[0] = out[1] = out[2] = 0;
+        return out;
+    }
+    const inverseLengthSquared = 1 / lengthSquared;
+    out[0] = a[0] * -a[3] * inverseLengthSquared;
+    out[1] = a[1] * -a[3] * inverseLengthSquared;
+    out[2] = a[2] * -a[3] * inverseLengthSquared;
     return out;
 };
 
@@ -316,11 +327,6 @@ pln.getIntersectLne3 = function(out, a, l)
         ley = l[4],
         lez = l[5];
 
-    // Clear the out in case of fails?
-    out[0] = 0;
-    out[1] = 0;
-    out[2] = 0;
-
     // Get line delta
     let dirX = lex - lsx,
         dirY = ley - lsy,
@@ -340,14 +346,14 @@ pln.getIntersectLne3 = function(out, a, l)
             return out;
         }
 
-        throw new Error("Denominator error");
+        return null;
     }
 
     let t = -((lsx * a[0] + lsy * a[1] + lsz * a[2]) + a[3]) / den;
 
     if (t < 0 || t > 1)
     {
-        throw new Error("Normalization error");
+        return null;
     }
 
     out[0] = (dirX * t) + lsx;
@@ -371,9 +377,9 @@ pln.getIntersectStartEnd = function(out, a, lineStart, lineEnd)
 {
     const vec6_0 = box3.alloc();
     box3.from(vec6_0, lineStart, lineEnd);
-    pln.getIntersectLne3(out, a, vec6_0);
+    const result = pln.getIntersectLne3(out, a, vec6_0);
     box3.unalloc(vec6_0);
-    return out;
+    return result;
 };
 
 /**
@@ -401,8 +407,14 @@ pln.getNormal = function(out, a)
  */
 pln.getOrthoPoint = function(out, a, p)
 {
-    let pMag = (a[0] * p[0] + a[1] * p[1] + a[2] * p[2]) + a[3];
-    vec3.multiplyScalar(out, a, pMag);
+    const
+        lengthSquared = a[0] * a[0] + a[1] * a[1] + a[2] * a[2],
+        scale = lengthSquared === 0 ? 0 :
+            ((a[0] * p[0] + a[1] * p[1] + a[2] * p[2]) + a[3]) / lengthSquared;
+
+    out[0] = a[0] * scale;
+    out[1] = a[1] * scale;
+    out[2] = a[2] * scale;
     return out;
 };
 
@@ -463,7 +475,8 @@ pln.intersectsLne3 = function(a, l)
 {
     let startSign = (a[0] * l[0] + a[1] * l[1] + a[2] * l[2]) + a[3];
     let endSign = (a[0] * l[3] + a[1] * l[4] + a[2] * l[5]) + a[3];
-    return (startSign < 0 && endSign > 0) || (endSign < 0 && startSign > 0);
+    return startSign === 0 || endSign === 0 ||
+        (startSign < 0 && endSign > 0) || (endSign < 0 && startSign > 0);
 };
 
 /**
@@ -476,8 +489,10 @@ pln.intersectsLne3 = function(a, l)
  */
 pln.intersectsPositionRadius = function(a, position, radius)
 {
-    let distance = position[0] * a[0] + position[1] * a[1] + position[2] * a[2] + a[3];
-    return Math.abs(distance) <= radius;
+    const
+        distance = position[0] * a[0] + position[1] * a[1] + position[2] * a[2] + a[3],
+        normalLength = Math.hypot(a[0], a[1], a[2]);
+    return radius >= 0 && Math.abs(distance) <= radius * (normalLength || 1);
 };
 
 /**
@@ -489,8 +504,10 @@ pln.intersectsPositionRadius = function(a, position, radius)
  */
 pln.intersectsSph3 = function(a, s)
 {
-    let distance = s[0] * a[0] + s[1] * a[1] + s[2] * a[2] + a[3];
-    return Math.abs(distance) <= s[3];
+    const
+        distance = s[0] * a[0] + s[1] * a[1] + s[2] * a[2] + a[3],
+        normalLength = Math.hypot(a[0], a[1], a[2]);
+    return s[3] >= 0 && Math.abs(distance) <= s[3] * (normalLength || 1);
 };
 
 /**
@@ -505,7 +522,8 @@ pln.intersectsStartEnd = function(a, start, end)
 {
     let startSign = (a[0] * start[0] + a[1] * start[1] + a[2] * start[2]) + a[3];
     let endSign = (a[0] * end[0] + a[1] * end[1] + a[2] * end[2]) + a[3];
-    return (startSign < 0 && endSign > 0) || (endSign < 0 && startSign > 0);
+    return startSign === 0 || endSign === 0 ||
+        (startSign < 0 && endSign > 0) || (endSign < 0 && startSign > 0);
 };
 
 /**
@@ -630,6 +648,9 @@ pln.toArray = function(a, arr, offset = 0)
  */
 pln.transformMat4 = function(out, a, m, nMatrix)
 {
+    const sourceLengthSquared = a[0] * a[0] + a[1] * a[1] + a[2] * a[2];
+    if (sourceLengthSquared === 0) return pln.copy(out, a);
+
     let mat3_0;
     if (!nMatrix)
     {
@@ -638,9 +659,10 @@ pln.transformMat4 = function(out, a, m, nMatrix)
     }
 
     // Coplanar Point
-    let cpX = a[0] * -a[3],
-        cpY = a[1] * -a[3],
-        cpZ = a[2] * -a[3];
+    const inverseLengthSquared = 1 / sourceLengthSquared;
+    let cpX = a[0] * -a[3] * inverseLengthSquared,
+        cpY = a[1] * -a[3] * inverseLengthSquared,
+        cpZ = a[2] * -a[3] * inverseLengthSquared;
 
     // Create reference point from Coplanar Point transformed by the affine mat4
     let rX = m[0] * cpX + m[4] * cpY + m[8] * cpZ + m[12],

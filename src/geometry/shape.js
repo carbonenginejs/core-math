@@ -35,8 +35,8 @@ export function createShape(shapes)
 
     function addShape(shape)
     {
-        let shapeVertices = shape.positions,
-            shapeHoles = shape.holes || [];
+        let shapeVertices = shape.positions.map(point => Array.from(point)),
+            shapeHoles = (shape.holes || []).map(hole => hole.map(point => Array.from(point)));
 
         const indexOffset = positions.length / 3;
 

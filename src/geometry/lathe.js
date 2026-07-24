@@ -7,7 +7,7 @@ import { toJSON } from "./json.js";
  * Creates a lathe
  * @author Three.js converted
  **/
-export function createLathe(options)
+export function createLathe(options = {})
 {
     let {
         points = [
@@ -20,7 +20,30 @@ export function createLathe(options)
         phiLength = Math.PI * 2
     } = options;
 
-    segments = Math.floor(segments);
+    segments = Math.max(3, Math.floor(Number.isFinite(segments) ? segments : 12));
+    if (!Array.isArray(points) || points.length < 2)
+    {
+        throw new Error("Lathe requires at least two profile points");
+    }
+    if (!Number.isFinite(phiStart) || !Number.isFinite(phiLength) || phiLength <= 0)
+    {
+        throw new Error("Invalid lathe sweep");
+    }
+    let hasRadius = false;
+    for (let i = 0; i < points.length; i++)
+    {
+        const point = points[i];
+        if (!point || point.length < 2 || !Number.isFinite(point[0]) || !Number.isFinite(point[1]))
+        {
+            throw new Error("Invalid lathe profile point");
+        }
+        hasRadius ||= point[0] !== 0;
+        if (i > 0 && point[0] === points[i - 1][0] && point[1] === points[i - 1][1])
+        {
+            throw new Error("Lathe profile contains a zero-length segment");
+        }
+    }
+    if (!hasRadius) throw new Error("Lathe profile must leave the rotation axis");
 
     // clamp phiLength so it's in range of [ 0, 2PI ]
     phiLength = num.clamp(phiLength, 0, Math.PI * 2);
@@ -62,6 +85,7 @@ export function createLathe(options)
                 break;
 
             case (points.length - 1):	// special handling for last Vertex on path
+                vec3.normalize(prevNormal, prevNormal);
                 initNormals.push(prevNormal[0], prevNormal[1], prevNormal[2]);
                 break;
 
@@ -131,8 +155,8 @@ export function createLathe(options)
                 d = base + 1;
 
             // faces
-            indices.push(a, b, d);
-            indices.push(c, d, b);
+            if (points[j][0] !== 0) indices.push(a, b, d);
+            if (points[j + 1][0] !== 0) indices.push(c, d, b);
         }
     }
 
