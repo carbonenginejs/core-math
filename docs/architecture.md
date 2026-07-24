@@ -30,7 +30,7 @@ organization dependency cycles.
 ## Dependency direction
 
 ```text
-      runtime-* packages       tools-browser
+      runtime-* packages       tools-browser (planned; unreleased)
               \                    /
                \                  /
                 v                v
@@ -55,9 +55,9 @@ Code belongs in `runtime-utils` only when all of these are true:
 5. Owning it here reduces duplicated foundation behavior rather than merely
    shortening an import.
 
-Once the Carbon-to-JavaScript conversion and foundation consolidation finish,
-new responsibilities should be uncommon. Additions require a demonstrated
-cross-package need and a clear subpath owner.
+With foundation consolidation complete, new responsibilities should be
+uncommon. Additions require a demonstrated cross-package need and a clear
+subpath owner.
 
 ## Current ownership
 
@@ -78,8 +78,8 @@ The [API reference](reference/api.md) is the exact current inventory.
 ## Ownership elsewhere
 
 - Browser-facing demos, clients, remote readers, inspectors, integration
-  helpers, and usable reference implementations belong in
-  `@carbonenginejs/tools-browser`.
+  helpers, and usable reference implementations have the planned owner
+  `@carbonenginejs/tools-browser`, which is not currently released.
 - Node filesystems, caches, credentials, servers, command-line interfaces, and
   build orchestration belong in `@carbonenginejs/tools-core`.
 - Runtime graph objects and domain readers belong in their owning

@@ -7,9 +7,8 @@ Summary: Records the consolidated math, constant, and type-system ownership and 
 
 ## Purpose
 
-The approved organization direction is to make `runtime-utils` the single
-stable, browser-safe foundation commonly consumed by CarbonEngineJS runtime
-libraries.
+`runtime-utils` is the single stable, browser-safe foundation commonly
+consumed by CarbonEngineJS runtime libraries.
 
 The surviving repository now contains the former utility, math, constant, and
 Carbon type-system implementations. Their inherited test suites run together,
@@ -23,7 +22,7 @@ models, documents, lifecycle, hydration, and dehydration.
 
 ## Implemented layout
 
-The families move intact enough to preserve useful imports:
+The moved families map directly enough to preserve useful imports:
 
 | Moved family | `runtime-utils` family |
 | --- | --- |
@@ -47,29 +46,29 @@ There is one curated `runtime-utils/is` surface:
 - generally useful structural checks belong here;
 - vector and matrix checks join only with explicit math semantics;
 - domain checks remain with their domain package;
-- browser-specific checks remain in `tools-browser`;
+- browser-specific checks remain outside this package; their planned,
+  unreleased owner is `tools-browser`;
 - established core predicate behavior wins wherever old names overlap.
 
 The goal is a useful shared predicate library, not a reduced compatibility
 snapshot.
 
-## Migration status
+## Migration map
 
-Completed locally:
+| Former import | Current import |
+| --- | --- |
+| `@carbonenginejs/core-math` | `@carbonenginejs/runtime-utils/math` |
+| `@carbonenginejs/core-math/<subpath>` | `@carbonenginejs/runtime-utils/<subpath>` |
+| `@carbonenginejs/runtime-const` | `@carbonenginejs/runtime-utils/const` |
+| `@carbonenginejs/runtime-const/<subpath>` | `@carbonenginejs/runtime-utils/<subpath>` |
+| `@carbonenginejs/core-types/<subpath>` | The matching `@carbonenginejs/runtime-utils/<subpath>` |
+| `@carbonenginejs/core-types` | The direct runtime-utils type/model/document subpaths used by the consumer |
 
-1. current contracts and baselines were inventoried;
-2. unique utility APIs and the math, constant, and type/model families were
-   assembled in the surviving Git history;
-3. inherited contract suites and independent-subpath imports pass;
-4. generator output was updated before consumer source;
-5. active authored consumers and generated npm output were migrated.
-
-Remaining release work is to publish the consolidated package, refresh
-registry-resolved locks, verify clean installs, and retire the old package
-names after the active-reference audit reaches zero.
-
-No compatibility package is required by default. One should exist only for a
-verified external consumer that cannot migrate during the coordinated release.
+The former package names are predecessor identities, not compatibility
+packages; maintained source lives here. The one deliberate API correction is
+scalar Hermite interpolation:
+use `cubicHermite` or `cubicHermiteDerivative` with argument order
+`(startValue, startTangent, endValue, endTangent, amount)`.
 
 ## Stability target
 

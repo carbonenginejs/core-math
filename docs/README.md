@@ -25,8 +25,9 @@ Use `runtime-utils` when code:
 - can remain independent of every other CarbonEngineJS package.
 
 Do not use it merely as a convenient home for code without an owner.
-Browser-facing demos, clients, inspectors, and usable application helpers
-belong in `@carbonenginejs/tools-browser`.
+Browser-facing demos, clients, inspectors, and usable application helpers have
+the planned owner `@carbonenginejs/tools-browser`; that package is not
+currently released.
 
 ## Where it fits
 
@@ -34,7 +35,7 @@ The package has no organization dependencies. It uses `gl-matrix` for the math
 families; its subpaths remain side-effect-free and independently importable.
 
 ```text
-runtime libraries       tools-browser
+runtime libraries       tools-browser (planned; unreleased)
         \                    /
          \                  /
           v                v
@@ -44,9 +45,9 @@ runtime libraries       tools-browser
       Web-standard platform APIs
 ```
 
-Runtime packages and `tools-browser` consume this foundation directly. Math,
-constant, type, schema, model, document, hydration, and lifecycle ownership is
-consolidated here.
+Runtime packages consume this foundation directly. The planned, unreleased
+`tools-browser` package will do the same. Math, constant, type, schema, model,
+document, hydration, and lifecycle ownership is consolidated here.
 
 ## Start here
 
@@ -75,7 +76,7 @@ import { asUint8Array } from "@carbonenginejs/runtime-utils/bytes";
 - [Class reference](reference/classes/README.md) catalogs maintained Carbon
   foundation classes.
 - [Foundation consolidation](concepts/foundation-consolidation.md) records the
-  implemented ownership move and remaining release/retirement work.
+  implemented ownership move and consumer migration map.
 
 The Carbon type/model/document guide is retained under
 [core-types/README.md](core-types/README.md) with updated package paths.

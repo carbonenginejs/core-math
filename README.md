@@ -13,8 +13,9 @@ The package owns:
 - Carbon type descriptors, schema metadata, models, lifecycle state,
   documents, hydration, and dehydration.
 
-Browser clients remain in `@carbonenginejs/tools-browser`; Node automation
-remains in `@carbonenginejs/tools-core`.
+Browser-client ownership is planned for `@carbonenginejs/tools-browser`; that
+package is not currently released. Node automation belongs in
+`@carbonenginejs/tools-core`.
 
 ## Install
 
@@ -33,10 +34,22 @@ import { PixelFormat } from "@carbonenginejs/runtime-utils/graphics";
 import { CjsSchema } from "@carbonenginejs/runtime-utils/schema";
 ```
 
-Former core-math and runtime-const subpaths remain top-level, so migration is
-a package-name replacement. Carbon type and model primitives are available
-from `/types`, `/schema`, `/model`, `/document`, `/hydration`, and
-`/lifecycle`.
+Former package imports map as follows:
+
+- `@carbonenginejs/core-math` becomes
+  `@carbonenginejs/runtime-utils/math`;
+- `@carbonenginejs/core-math/<subpath>` becomes
+  `@carbonenginejs/runtime-utils/<subpath>`;
+- `@carbonenginejs/runtime-const` becomes
+  `@carbonenginejs/runtime-utils/const`;
+- `@carbonenginejs/runtime-const/<subpath>` becomes
+  `@carbonenginejs/runtime-utils/<subpath>`;
+- `@carbonenginejs/core-types/<subpath>` becomes the matching
+  `@carbonenginejs/runtime-utils/<subpath>`; replace former root imports with
+  the direct type/model/document subpaths they use.
+
+Carbon type and model primitives use `/types`, `/schema`, `/model`,
+`/document`, `/hydration`, and `/lifecycle`.
 
 The root export is intentionally limited to common neutral utilities, math,
 and non-conflicting constants. Import Carbon type/model/document families from

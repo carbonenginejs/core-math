@@ -11,7 +11,9 @@ Summary: Defines ownership and dependency rules for shared constant vocabularies
 
 This package provides stable constants that can be shared by:
 
-- `format-*` packages when emitting GPU-free semantic payloads.
+- `runtime-resource/formats/*` readers when emitting GPU-free semantic
+  payloads.
+- maintained standalone shader-format packages.
 - `runtime-resource` when interpreting payloads and resource intent.
 - `engine-*` packages when mapping payloads to backend APIs.
 - tools and tests that need canonical media, graphics, audio, shader, D3D, or
@@ -26,13 +28,14 @@ This package provides stable constants that can be shared by:
 - numeric mirrors of external enums where useful, such as DXGI/D3D values.
 - mapping tables between shared constants and backend constants.
 
-`runtime-utils` does not own:
+The constant families do not own:
 
 - resource lifecycle, cache, source reads, or loader dispatch.
 - format parsing or byte decoding.
 - format-container internals such as DDS header offsets, FOURCC parsing,
   PNG chunk handling, WAV chunk layouts, or MP4 box parsing.
-- class hydration or runtime object population.
+- class hydration or runtime object population, which are separate
+  runtime-utils families.
 - WebGPU/WebGL resource creation.
 
 ## Dependency Rule
@@ -42,14 +45,15 @@ This package provides stable constants that can be shared by:
 Preferred direction:
 
 ```text
-format-*          may emit matching strings, optionally import runtime-utils
+runtime-resource/formats/*  may emit matching strings, imports runtime-utils
+shader format-*             may emit matching strings, import runtime-utils
 runtime-resource  may import/re-export runtime-utils
 engine-*          imports runtime-utils for backend mapping
 runtime-utils     imports no runtime-resource or engine packages
 ```
 
-Format packages are allowed to remain standalone by emitting plain strings that
-match this package's constants.
+Maintained shader format packages may remain standalone while emitting plain
+strings that match this package's constants.
 
 ## Initial Domains
 
@@ -62,18 +66,21 @@ match this package's constants.
 
 ## Format-Specific Constants
 
-Container-specific constants live with their format package.
+Container-specific constants live with their maintained reader.
 
 Examples:
 
 - DDS magic numbers, header offsets, pixel format flags, caps bits, FOURCC
-  values, and DX10 header parsing belong to `format-dds`.
-- PNG chunk names and filter ids belong to `format-png`.
-- WAV RIFF chunk ids belong to `format-wav`.
+  values, and DX10 header parsing belong to
+  `@carbonenginejs/runtime-resource/formats/dds`.
+- PNG chunk names and filter ids belong to
+  `@carbonenginejs/runtime-resource/formats/png`.
+- WAV RIFF chunk ids belong to
+  `@carbonenginejs/runtime-resource/formats/wav`.
 
 `runtime-utils` may still expose general constants that those formats reference,
 such as canonical `PixelFormat` strings or generic `DxgiFormat` numeric enum
-values. The parser-specific interpretation remains in the format package.
+values. Parser-specific interpretation remains in the maintained reader.
 
 ## Payload Example
 

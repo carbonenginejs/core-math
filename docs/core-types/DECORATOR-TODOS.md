@@ -12,7 +12,7 @@ No missing decorator primitive is currently confirmed. `@type`, `@io`,
 `CjsModel.SetValues` adds declared `@io.flag`/`@io.rebuild` consequences at
 write time.
 
-## TODO
+## Open work
 
 - [ ] Decide how a concrete Blue class declares an inherited Carbon method
   without adding a forwarding wrapper. `CjsSchema.decorateMethod` can already

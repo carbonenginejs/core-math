@@ -15,6 +15,10 @@ Most container modules in `src` were extracted from ccpwgl's
 imports. The code remains MIT-licensed under the CarbonEngineJS/ccpwgl project
 license.
 
+- Project: <https://github.com/cppctamber/ccpwgl2>
+- Copyright: 2020 ccpgames rawrafox cppctamber
+- License: MIT; terms reproduced below
+
 ## Mapbox earcut helper
 
 `src/geometry/helpers/earcut.js` is an embedded copy of an Earcut-style
@@ -24,11 +28,14 @@ triangulation helper from the ccpwgl math tree.
 - License: ISC
 - Local license copy: `src/geometry/helpers/LICENSE`
 
-## Three.js-derived geometry notes
+## Three.js-derived geometry helpers
 
-Some geometry helpers in the extracted ccpwgl math tree are marked as converted
-from Three.js-style algorithms. These are retained as source comments and should
-be reviewed before expanding the public geometry surface.
+Math and geometry helpers in the extracted ccpwgl tree retain source comments
+attributing conversions to Three.js authors.
+
+- Project: <https://github.com/mrdoob/three.js>
+- Copyright: 2010-2026 three.js authors
+- License: MIT; terms reproduced below
 
 ## Fenris Creations / CCP Games tangent behavior
 
@@ -36,3 +43,22 @@ be reviewed before expanding the public geometry surface.
 derived from observed EVE/Carbon shader behavior and generated test vectors.
 No Fenris Creations (CCP Games) shader source, tools, or assets are included.
 
+## MIT terms for ccpwgl and Three.js material
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notices and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
